@@ -1,0 +1,33 @@
+By group:
+  period=5993pts | 28 anomalies | 3 sensors
+
+All anomalous events (sorted by time index):
+──────────────────────────────────────────────────────────────────────
+  [CORR]  idx    0→2001  | group=5993pts  | score=2.92σ
+  [CORR]  idx 66066→68067  | group=5993pts  | score=3.20σ
+  [CORR]  idx 78078→80079  | group=5993pts  | score=5.16σ
+  [CORR]  idx 96096→98097  | group=5993pts  | score=2.39σ
+  [CORR]  idx 108108→110109  | group=5993pts  | score=3.38σ
+  [AMP ]  idx 112112→114113  | group=5993pts  | score=1.85σ
+  [CORR]  idx 120120→122121  | group=5993pts  | score=4.22σ
+  [AMP ]  idx 122122→124123  | group=5993pts  | score=4.54σ
+  [BOTH]  idx 124124→126125  | group=5993pts  | score=13.57σ
+  [BOTH]  idx 126126→128127  | group=5993pts  | score=14.43σ
+  [BOTH]  idx 128128→130129  | group=5993pts  | score=16.43σ
+  [BOTH]  idx 130130→132131  | group=5993pts  | score=15.16σ
+  [BOTH]  idx 132132→134133  | group=5993pts  | score=15.43σ
+  [BOTH]  idx 134134→136135  | group=5993pts  | score=14.13σ
+  [BOTH]  idx 136136→138137  | group=5993pts  | score=17.30σ
+  [BOTH]  idx 138138→140139  | group=5993pts  | score=15.51σ
+  [BOTH]  idx 140140→142141  | group=5993pts  | score=17.16σ
+  [BOTH]  idx 142142→144143  | group=5993pts  | score=17.71σ
+  [BOTH]  idx 144144→146145  | group=5993pts  | score=22.05σ
+  [BOTH]  idx 146146→148147  | group=5993pts  | score=20.26σ
+  [BOTH]  idx 148148→150149  | group=5993pts  | score=20.17σ
+  [BOTH]  idx 150150→152151  | group=5993pts  | score=25.14σ
+  [BOTH]  idx 152152→154153  | group=5993pts  | score=23.99σ
+  [BOTH]  idx 154154→156155  | group=5993pts  | score=21.37σ
+  [BOTH]  idx 156156→158157  | group=5993pts  | score=24.05σ
+  [BOTH]  idx 158158→160159  | group=5993pts  | score=21.27σ
+  [BOTH]  idx 160160→162161  | group=5993pts  | score=17.62σ
+  [BOTH]  idx 162162→164163  | group=5993pts  | score=19.19σ

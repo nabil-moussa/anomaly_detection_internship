@@ -1,0 +1,17 @@
+By group:
+  period=3854pts | 12 anomalies | 3 sensors
+
+All anomalous events (sorted by time index):
+──────────────────────────────────────────────────────────────────────
+  [CORR]  idx    0→3853  | group=3854pts  | score=3.68σ
+  [AMP ]  idx 57810→61663  | group=3854pts  | score=2.06σ
+  [BOTH]  idx 123328→127181  | group=3854pts  | score=8.09σ
+  [BOTH]  idx 127182→131035  | group=3854pts  | score=10.84σ
+  [BOTH]  idx 131036→134889  | group=3854pts  | score=9.63σ
+  [BOTH]  idx 134890→138743  | group=3854pts  | score=7.34σ
+  [BOTH]  idx 138744→142597  | group=3854pts  | score=7.01σ
+  [BOTH]  idx 142598→146451  | group=3854pts  | score=7.90σ
+  [BOTH]  idx 146452→150305  | group=3854pts  | score=8.27σ
+  [BOTH]  idx 150306→154159  | group=3854pts  | score=12.15σ
+  [BOTH]  idx 154160→158013  | group=3854pts  | score=7.79σ
+  [BOTH]  idx 158014→161867  | group=3854pts  | score=7.24σ

@@ -1,0 +1,9 @@
+{
+  "host": "mesohelios1.univ-fcomte.fr",
+  "user": "nmoussa",
+  "remote_dir": "/Work/Users/nmoussa/mtad-gat-pytorch",
+  "handoff_dir": "/Work/Users/nmoussa/handoff",
+  "conda_env": "mtad",
+  "poll_interval": 30,
+  "job_timeout": 14400
+}

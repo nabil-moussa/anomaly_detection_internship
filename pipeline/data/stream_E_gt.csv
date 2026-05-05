@@ -1,0 +1,7 @@
+fault_type,start_row,end_row,n_rows
+outer_race_0g,15000,17000,2000
+imbalance_35g,23000,26500,3500
+cage_fault_0g,35500,41000,5500
+ball_fault_0g,43000,49500,6500
+cage_fault_0g,49500,57500,8000
+outer_race_0g,58500,68500,10000
