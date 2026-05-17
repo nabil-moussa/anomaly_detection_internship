@@ -280,26 +280,20 @@ def download_scores(cfg: dict, stream: str, local_handoff: str) -> str | None:
     return None
 
 
-# Lazy imports
-
 def _import_adequacy():
-    for name in ("CCAD_check"):
-        try:
-            return __import__(name)
-        except ImportError:
-            pass
-    print("adequacy checker not found. ")
-    sys.exit(1)
+    try:
+        return __import__("CCAD_check")
+    except ImportError:
+        print("adequacy checker not found.")
+        sys.exit(1)
 
 
 def _import_pipeline():
-    for name in ("CCAD"):
-        try:
-            return __import__(name)
-        except ImportError:
-            pass
-    print("ERROR: CCAD pipeline not found.")
-    sys.exit(1)
+    try:
+        return __import__("CCAD")
+    except ImportError:
+        print("ERROR: CCAD pipeline not found.")
+        sys.exit(1)
 
 
 #    Adequacy & statistical wrappers
