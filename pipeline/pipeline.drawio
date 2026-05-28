@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net">
   <diagram name="Page-1" id="jQ9Fqbtl65SzF2SOXnLa">
-    <mxGraphModel dx="1212" dy="620" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+    <mxGraphModel dx="1208" dy="649" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -47,8 +47,9 @@
             <Array as="points" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="C3bYqOQl220myX_T4X8d-14" edge="1" parent="1" source="C3bYqOQl220myX_T4X8d-3" style="curved=1;startArrow=none;endArrow=block;exitX=0;exitY=0.8;entryX=0.5;entryY=0;rounded=0;" target="C3bYqOQl220myX_T4X8d-4" value="≥ 0.70">
-          <mxGeometry relative="1" as="geometry">
+        <mxCell id="C3bYqOQl220myX_T4X8d-14" edge="1" parent="1" source="C3bYqOQl220myX_T4X8d-3" style="curved=1;startArrow=none;endArrow=block;exitX=0;exitY=0.8;entryX=0.5;entryY=0;rounded=0;" target="C3bYqOQl220myX_T4X8d-4" value="&gt;= 0.70">
+          <mxGeometry relative="1" x="-0.0479" y="5" as="geometry">
+            <mxPoint as="offset" />
             <Array as="points">
               <mxPoint x="119" y="487" />
             </Array>
@@ -59,7 +60,7 @@
             <Array as="points" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="C3bYqOQl220myX_T4X8d-16" edge="1" parent="1" source="C3bYqOQl220myX_T4X8d-3" style="curved=1;startArrow=none;endArrow=block;exitX=1;exitY=0.78;entryX=0.5;entryY=0;rounded=0;" target="C3bYqOQl220myX_T4X8d-6" value="&amp;lt; 0.50">
+        <mxCell id="C3bYqOQl220myX_T4X8d-16" edge="1" parent="1" source="C3bYqOQl220myX_T4X8d-3" style="curved=1;startArrow=none;endArrow=block;exitX=1;exitY=0.78;entryX=0.5;entryY=0;rounded=0;" target="C3bYqOQl220myX_T4X8d-6" value="&lt;= 0.50">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="573" y="487" />
