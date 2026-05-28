@@ -59,19 +59,20 @@ import os
 
 
 def correlation_strength(df, cols, window):
-    out = []
+    out_abs, out_signed = [], []
     for i in range(len(df)):
         if i < window:
-            out.append(np.nan); continue
+            out_abs.append(np.nan); out_signed.append(np.nan); continue
         sub = df[cols].iloc[i-window:i]
         nc  = [c for c in cols if sub[c].std() > 1e-9]
         if len(nc) < 2:
-            out.append(np.nan); continue
+            out_abs.append(np.nan); out_signed.append(np.nan); continue
         cm = sub[nc].corr().values
         ut = cm[np.triu_indices_from(cm, k=1)]
         vp = ut[~np.isnan(ut)]
-        out.append(np.mean(np.abs(vp)) if len(vp) else np.nan)
-    return pd.Series(out, index=df.index)
+        out_abs.append(np.mean(np.abs(vp)) if len(vp) else np.nan)
+        out_signed.append(np.mean(vp) if len(vp) else np.nan)
+    return pd.Series(out_abs, index=df.index), pd.Series(out_signed, index=df.index)
 
 
 def normalize_cycle(signal, start, end, target_length):
@@ -283,19 +284,20 @@ def build_template(template_cycles, window_size):
     return tmpl
 
 
-def align_cycle_to_template(cycle, template_median, max_shift_frac=0.10):
-    ms   = max(1, int(len(cycle)*max_shift_frac))
-    corr = np.correlate(cycle-cycle.mean(), template_median-template_median.mean(), mode='full')
-    ctr  = len(cycle)-1
-    srch = corr[ctr-ms:ctr+ms+1]
-    bs   = np.argmax(srch) - ms
-    if bs > 0:
-        aligned = np.concatenate([cycle[bs:], cycle[-bs:]])
-    elif bs < 0:
-        aligned = np.concatenate([cycle[:bs], cycle[-bs:]])
-    else:
-        aligned = cycle.copy()
-    return aligned, bs
+def align_cycle_to_template(cycle, template_median, max_shift_frac=0.30):
+
+    ms   = max(1, int(len(cycle) * max_shift_frac))
+    c1   = cycle           - cycle.mean()
+    c2   = template_median - template_median.mean()
+
+    corr = np.correlate(c1, c2, mode='full')
+    ctr  = len(cycle) - 1
+    srch = corr[ctr - ms: ctr + ms + 1]
+
+    best_shift = np.argmax(srch) - ms
+
+    aligned = np.roll(cycle, -best_shift)
+    return aligned, best_shift
 
 
 def score_single_cycle(nc, tmpl, template_median=None, max_shift_frac=0.10):
@@ -317,7 +319,8 @@ def score_single_cycle(nc, tmpl, template_median=None, max_shift_frac=0.10):
     return np.array(scores), details, shift
 
 
-def calibrate_threshold(template_cycles, tmpl, template_median, percentile=99):
+def calibrate_threshold(template_cycles, tmpl, template_median,
+                        percentile=99, n_bootstrap=300, ci=0.90):
     max_scores = []
     for i in range(len(template_cycles)):
         loo = np.delete(template_cycles, i, axis=0)
@@ -327,10 +330,31 @@ def calibrate_threshold(template_cycles, tmpl, template_median, percentile=99):
         lm  = np.median(loo, axis=0)
         s, _, _ = score_single_cycle(template_cycles[i], lt, lm)
         max_scores.append(np.max(s))
-    thr = np.percentile(max_scores, percentile)
-    print(f"      Threshold ({percentile}th pct): {thr:.3f} | mean={np.mean(max_scores):.3f}, std={np.std(max_scores):.3f}")
-    return thr, max_scores
 
+    thr = np.percentile(max_scores, percentile)
+
+    rng       = np.random.default_rng(42)
+    boot_thrs = [np.percentile(
+                    rng.choice(max_scores, size=len(max_scores), replace=True),
+                    percentile)
+                 for _ in range(n_bootstrap)]
+    alpha     = (1 - ci) / 2
+    thr_low   = float(np.percentile(boot_thrs, alpha * 100))
+    thr_high  = float(np.percentile(boot_thrs, (1 - alpha) * 100))
+
+    print(f"      Threshold ({percentile}th pct): {thr:.3f} "
+          f"| CI=[{thr_low:.3f}, {thr_high:.3f}] "
+          f"| mean={np.mean(max_scores):.3f}, std={np.std(max_scores):.3f}")
+    return thr, max_scores, thr_low, thr_high
+
+def grade_alert(max_score, thr_point, thr_low, thr_high):
+    if max_score > thr_high:
+        return 'HIGH'
+    elif max_score > thr_point:
+        return 'MEDIUM'
+    elif max_score > thr_low:
+        return 'LOW'
+    return 'NORMAL'
 
 def pca_amplitude_detection(raw_df, cols, all_cycles, template_global_idx_set,
                               normal_cycle_indices, target_length=100,
@@ -388,13 +412,17 @@ def pca_amplitude_detection(raw_df, cols, all_cycles, template_global_idx_set,
         for c in sensor_pcas:
             if nc[c] is None:
                 continue
-            pca, sc, mask = sensor_pcas[c]
-            x   = nc[c][mask]
-            if len(x) < 2:
-                continue
-            xs  = sc.transform(x.reshape(1,-1))
+            pca, sc_obj, mask = sensor_pcas[c]
+            x    = nc[c][mask]
+            ref  = sc_obj.mean_ 
+            corr = np.correlate(x - x.mean(), ref - ref.mean(), mode='full')
+            ms   = max(1, int(len(x) * 0.30))
+            ctr  = len(x) - 1
+            shift = np.argmax(corr[ctr - ms: ctr + ms + 1]) - ms
+            x_aligned = np.roll(x, -shift)
+            xs   = sc_obj.transform(x_aligned.reshape(1, -1))
             proj = pca.inverse_transform(pca.transform(xs))
-            errs.append(float(np.mean((xs-proj)**2)))
+            errs.append(float(np.mean((xs - proj) ** 2)))
         return np.mean(errs) if errs else np.nan
 
     holdout = [i for i in normal_cycle_indices if i not in template_global_idx_set]
@@ -435,7 +463,7 @@ def run_pipeline_for_group(df, group_cols, group_period, group_id, min_cycles=3)
 
     auto_window = max(10, group_period // 8)
     print(f"\n  STEP 2 – Correlation signal (window={auto_window})")
-    corr_train = correlation_strength(df_train, group_cols, auto_window)
+    corr_train, corr_train_signed = correlation_strength(df_train, group_cols, auto_window)
     print(f"    {len(corr_train)} pts | {corr_train.isna().sum()} NaN")
 
     if corr_train.dropna().std() < 1e-9:
@@ -473,6 +501,7 @@ def run_pipeline_for_group(df, group_cols, group_period, group_id, min_cycles=3)
     print(f"\n  STEP 6 – Templates (window_size={window_size})")
     cluster_templates, cluster_medians = {}, {}
     cluster_thresholds, cluster_loo_scores = {}, {}
+    cluster_thresholds_low, cluster_thresholds_high = {}, {}
     template_global_idx_sets = {}
 
     for cid, cycle_indices in clusters.items():
@@ -483,10 +512,12 @@ def run_pipeline_for_group(df, group_cols, group_period, group_id, min_cycles=3)
             print(f"      ✗ {e}"); continue
         tmpl  = build_template(tn, window_size)
         med_c = np.median(tn, axis=0)
-        thr, loo = calibrate_threshold(tn, tmpl, med_c)
+        thr, loo, thr_low, thr_high = calibrate_threshold(tn, tmpl, med_c)
         cluster_templates[cid]        = tmpl
         cluster_medians[cid]          = med_c
         cluster_thresholds[cid]       = thr
+        cluster_thresholds_low[cid]   = thr_low
+        cluster_thresholds_high[cid]  = thr_high
         cluster_loo_scores[cid]       = loo
         template_global_idx_sets[cid] = set(tgi)
 
@@ -503,7 +534,7 @@ def run_pipeline_for_group(df, group_cols, group_period, group_id, min_cycles=3)
         all_template_indices.update(s)
 
     print(f"\n  STEP 7 – Scoring test cycles (full stream)")
-    corr_full = correlation_strength(df_full, group_cols, auto_window)
+    corr_full, corr_full_signed = correlation_strength(df_full, group_cols, auto_window)
 
     if seg_method == "NaN boundary" or seg_method == "Consistent NaN gaps":
         try:
@@ -562,17 +593,34 @@ def run_pipeline_for_group(df, group_cols, group_period, group_id, min_cycles=3)
         min_anom = max(2, int(tmpl['n_windows'] * 0.25))
         above    = np.sum(ws > thr)
         max_s    = np.max(ws)
-        is_anom  = (above >= min_anom) or (max_s > 2*thr)
+        is_anom   = (above >= min_anom) or (max_s > 2*thr)
+        thr_low   = cluster_thresholds_low[best_cid]
+        thr_high  = cluster_thresholds_high[best_cid]
+        alert_tier = grade_alert(max_s, thr, thr_low, thr_high)
         results.append({'cycle_idx': vi, 'cluster_id': best_cid,
                         'is_anomaly': is_anom, 'max_score': max_s,
                         'mean_score': np.mean(ws), 'windows_above_thresh': int(above),
                         'window_scores': ws, 'window_details': det,
-                        'shift_applied': shift, 'threshold': thr})
+                        'shift_applied': shift, 'threshold': thr,
+                        'alert_tier': alert_tier})
 
     all_cycles = full_cycles
     corr       = corr_full
 
     corr_anomalies = {r['cycle_idx'] for r in results if r['is_anomaly']}
+
+    signed_norm = [normalize_cycle(corr_full_signed, s, e, target_length)
+                   for s, e, _ in all_cycles]
+    for vi in valid_test:
+        if signed_norm[vi] is None: continue
+        best_cid = min(cluster_medians,
+                       key=lambda c: np.linalg.norm(signed_norm[vi] - cluster_medians[c]))
+        ws_s, _, _ = score_single_cycle(signed_norm[vi],
+                                        cluster_templates[best_cid],
+                                        cluster_medians[best_cid])
+        thr = cluster_thresholds[best_cid]
+        if np.max(ws_s) > 2*thr or np.sum(ws_s > thr) >= max(2, int(cluster_templates[best_cid]['n_windows'] * 0.25)):
+            corr_anomalies.add(vi)
 
 
 ####
@@ -614,7 +662,9 @@ def run_pipeline_for_group(df, group_cols, group_period, group_id, min_cycles=3)
             'all_template_indices': all_template_indices, 'results': results,
             'corr_anomalies': corr_anomalies, 'amp_anomalies': amp_anom,
             'amp_threshold': amp_thr, 'cycle_amp_scores': amp_scores,
-            'final_anomalies': final, 'both_methods': both}
+            'final_anomalies': final, 'both_methods': both,
+            'cluster_thresholds_low':  cluster_thresholds_low,
+            'cluster_thresholds_high': cluster_thresholds_high}
 
 
 # VISUALISATION
@@ -982,7 +1032,7 @@ def print_group_report(out):
             if r:
                 tmpl = out['cluster_templates'][r['cluster_id']]
                 thr  = r['threshold']
-                print(f"  Cluster   : {r['cluster_id']}")
+                print(f"  Cluster   : {r['cluster_id']}  |  Alert tier: {r.get('alert_tier', '?')}")
                 print(f"  Corr      : max={r['max_score']:.2f}σ | mean={r['mean_score']:.2f}σ"
                       f" | shift={r['shift_applied']}"
                       f" | windows>{thr:.2f}: {r['windows_above_thresh']}/{tmpl['n_windows']}")
@@ -1069,7 +1119,7 @@ if __name__ == "__main__":
 
     print("\nEstimating period from all-sensor correlation signal (normal region)...")
     auto_win_est = max(10, len(df_normal) // 500)
-    corr_est = correlation_strength(df_normal, sensor_cols, auto_win_est)
+    corr_est, _ = correlation_strength(df_normal, sensor_cols, auto_win_est)
     period, conf = estimate_period_from_corr(corr_est)
 
     if period is None:
@@ -1398,9 +1448,10 @@ if __name__ == "__main__":
                 cycle_df.insert(4, 'cycle_end',    end)
                 cycle_df.insert(5, 'cycle_length', length)
                 cycle_df.insert(6, 'detection_type', det)
-                cycle_df.insert(7, 'max_corr_score',
+                cycle_df.insert(7, 'alert_tier', r.get('alert_tier', None) if r else None)
+                cycle_df.insert(8, 'max_corr_score',
                                 round(r['max_score'], 4) if r else None)
-                cycle_df.insert(8, 'amp_recon_error',
+                cycle_df.insert(9, 'amp_recon_error',
                                 round(out['cycle_amp_scores'][ci], 5)
                                 if out['cycle_amp_scores'][ci] is not None else None)
                 anomaly_rows.append(cycle_df)
