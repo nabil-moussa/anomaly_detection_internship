@@ -13,13 +13,12 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 import warnings
 import os
-
 #df = pd.read_csv(r"C:\Users\user\Downloads\ccad_drift_test (1).csv")
 
-df = pd.read_csv("D:\\MaFaulDa\\streams\\stream_C.csv")
-df = df.drop(columns=['tachometer','microphone','overhang_axial','overhang_tangential','overhang_radial'])
-# df = pd.read_csv(r"C:\Users\user\OneDrive\Desktop\MTS\multivariate_two_templates\multivariate_two_templates.csv")
-# df = df[['sensorA_light_left', 'sensorB_light_right', 'hydraulic_pressure', 'shaft_rotation', 'lateral_vibration']]
+##df = pd.read_csv("D:\\MaFaulDa\\streams\\stream_A.csv")
+##df = df.drop(columns=['tachometer','microphone','overhang_axial','overhang_tangential','overhang_radial'])
+#df = pd.read_csv(r"C:\Users\user\OneDrive\Desktop\MTS\multivariate_two_templates\multivariate_two_templates.csv")
+#df = df[['sensorA_light_left', 'sensorB_light_right', 'hydraulic_pressure', 'shaft_rotation', 'lateral_vibration']]
 ####
 # import numpy as np
 # import pandas as pd
@@ -52,27 +51,28 @@ df = df.drop(columns=['tachometer','microphone','overhang_axial','overhang_tange
 # print(f"Loaded: {df.shape[0]} rows × {df.shape[1]} sensors")
 # print(f"Sensors: {sensor_cols[:10]}{'...' if len(sensor_cols)>10 else ''}")
 ####
-sensor_cols = list(df.columns)
-sensor_cols = [c for c in sensor_cols if c != 'timestamp']
+##sensor_cols = list(df.columns)
+##sensor_cols = [c for c in sensor_cols if c != 'timestamp']
 
-print(f"Loaded: {df.shape[0]} rows × {df.shape[1]} sensors")
-print(f"Sensors: {sensor_cols[:10]}{'...' if len(sensor_cols)>10 else ''}")
+##print(f"Loaded: {df.shape[0]} rows × {df.shape[1]} sensors")
+##print(f"Sensors: {sensor_cols[:10]}{'...' if len(sensor_cols)>10 else ''}")
 
 
 def correlation_strength(df, cols, window):
-    out = []
+    out_abs, out_signed = [], []
     for i in range(len(df)):
         if i < window:
-            out.append(np.nan); continue
+            out_abs.append(np.nan); out_signed.append(np.nan); continue
         sub = df[cols].iloc[i-window:i]
         nc  = [c for c in cols if sub[c].std() > 1e-9]
         if len(nc) < 2:
-            out.append(np.nan); continue
+            out_abs.append(np.nan); out_signed.append(np.nan); continue
         cm = sub[nc].corr().values
         ut = cm[np.triu_indices_from(cm, k=1)]
         vp = ut[~np.isnan(ut)]
-        out.append(np.mean(np.abs(vp)) if len(vp) else np.nan)
-    return pd.Series(out, index=df.index)
+        out_abs.append(np.mean(np.abs(vp)) if len(vp) else np.nan)
+        out_signed.append(np.mean(vp) if len(vp) else np.nan)
+    return pd.Series(out_abs, index=df.index), pd.Series(out_signed, index=df.index)
 
 
 def normalize_cycle(signal, start, end, target_length):
@@ -166,6 +166,7 @@ def segmentation_quality(cycles, signal):
     spread = np.mean([np.linalg.norm(c-med) for c in arr]) / (np.std(signal.dropna()) + 1e-9)
     return spread + cv*2
 
+
 def detect_cycles_with_fallback(signal, raw_df, cols, min_points=5,
                                  forced_period=None):
     candidates = []
@@ -178,7 +179,6 @@ def detect_cycles_with_fallback(signal, raw_df, cols, min_points=5,
         q = segmentation_quality(cycles, signal)
         print(f"    [{label}] {len(cycles)} cycles | quality={q:.3f}")
         candidates.append((q, cycles, label))
-
 
     if forced_period is not None and forced_period > min_points:
         stride_cycles = []
@@ -204,7 +204,6 @@ def detect_cycles_with_fallback(signal, raw_df, cols, min_points=5,
 
 
 def cluster_cycles_into_templates(all_normalised, all_cycles, signal,
-
                                    max_k=5, min_sil=0.15, min_size=1):
     valid = [(i, nc) for i, nc in enumerate(all_normalised) if nc is not None]
     if len(valid) < 3:
@@ -230,6 +229,7 @@ def cluster_cycles_into_templates(all_normalised, all_cycles, signal,
     clusters = {}
     for l, i in zip(lbl, indices):
         clusters.setdefault(int(l), []).append(i)
+    # never discard clusters
     return clusters, set()
 
 
@@ -255,10 +255,10 @@ def select_template_cycles(all_cycles, signal, target_length, candidate_indices,
 
     dist_mean = mean_dist.mean()
     dist_std  = mean_dist.std()
-    cutoff    = dist_mean + 2 * dist_std
+    cutoff    = dist_mean + 2 * dist_std 
 
     mask     = mean_dist <= cutoff
-    if mask.sum() < 3:   # never drop below 3
+    if mask.sum() < 3:                            #Never drop below 3
         mask = mean_dist <= np.percentile(mean_dist, keep_frac * 100)
 
     keep_idx = np.where(mask)[0]
@@ -284,19 +284,20 @@ def build_template(template_cycles, window_size):
     return tmpl
 
 
-def align_cycle_to_template(cycle, template_median, max_shift_frac=0.10):
-    ms   = max(1, int(len(cycle)*max_shift_frac))
-    corr = np.correlate(cycle-cycle.mean(), template_median-template_median.mean(), mode='full')
-    ctr  = len(cycle)-1
-    srch = corr[ctr-ms:ctr+ms+1]
-    bs   = np.argmax(srch) - ms
-    if bs > 0:
-        aligned = np.concatenate([cycle[bs:], cycle[-bs:]])
-    elif bs < 0:
-        aligned = np.concatenate([cycle[:bs], cycle[-bs:]])
-    else:
-        aligned = cycle.copy()
-    return aligned, bs
+def align_cycle_to_template(cycle, template_median, max_shift_frac=0.30):
+
+    ms   = max(1, int(len(cycle) * max_shift_frac))
+    c1   = cycle           - cycle.mean()
+    c2   = template_median - template_median.mean()
+
+    corr = np.correlate(c1, c2, mode='full')
+    ctr  = len(cycle) - 1
+    srch = corr[ctr - ms: ctr + ms + 1]
+
+    best_shift = np.argmax(srch) - ms
+
+    aligned = np.roll(cycle, -best_shift)
+    return aligned, best_shift
 
 
 def score_single_cycle(nc, tmpl, template_median=None, max_shift_frac=0.10):
@@ -318,7 +319,8 @@ def score_single_cycle(nc, tmpl, template_median=None, max_shift_frac=0.10):
     return np.array(scores), details, shift
 
 
-def calibrate_threshold(template_cycles, tmpl, template_median, percentile=99):
+def calibrate_threshold(template_cycles, tmpl, template_median,
+                        percentile=99, n_bootstrap=300, ci=0.90):
     max_scores = []
     for i in range(len(template_cycles)):
         loo = np.delete(template_cycles, i, axis=0)
@@ -328,12 +330,35 @@ def calibrate_threshold(template_cycles, tmpl, template_median, percentile=99):
         lm  = np.median(loo, axis=0)
         s, _, _ = score_single_cycle(template_cycles[i], lt, lm)
         max_scores.append(np.max(s))
+
     thr = np.percentile(max_scores, percentile)
-    print(f"      Threshold ({percentile}th pct): {thr:.3f} | mean={np.mean(max_scores):.3f}, std={np.std(max_scores):.3f}")
-    return thr, max_scores
 
+    rng       = np.random.default_rng(42)
+    boot_thrs = [np.percentile(
+                    rng.choice(max_scores, size=len(max_scores), replace=True),
+                    percentile)
+                 for _ in range(n_bootstrap)]
+    alpha     = (1 - ci) / 2
+    thr_low   = float(np.percentile(boot_thrs, alpha * 100))
+    thr_high  = float(np.percentile(boot_thrs, (1 - alpha) * 100))
 
-def pca_amplitude_detection(raw_df, cols, all_cycles, template_global_idx_set, normal_cycle_indices, target_length=100,ev_target=0.75, thr_pct=95):
+    print(f"      Threshold ({percentile}th pct): {thr:.3f} "
+          f"| CI=[{thr_low:.3f}, {thr_high:.3f}] "
+          f"| mean={np.mean(max_scores):.3f}, std={np.std(max_scores):.3f}")
+    return thr, max_scores, thr_low, thr_high
+
+def grade_alert(max_score, thr_point, thr_low, thr_high):
+    if max_score > thr_high:
+        return 'HIGH'
+    elif max_score > thr_point:
+        return 'MEDIUM'
+    elif max_score > thr_low:
+        return 'LOW'
+    return 'NORMAL'
+
+def pca_amplitude_detection(raw_df, cols, all_cycles, template_global_idx_set,
+                              normal_cycle_indices, target_length=100,
+                              ev_target=0.75, thr_pct=95):
     def extract_norm(ci):
         s, e, _ = all_cycles[ci]
         seg = raw_df[cols].iloc[s:e]
@@ -387,13 +412,17 @@ def pca_amplitude_detection(raw_df, cols, all_cycles, template_global_idx_set, n
         for c in sensor_pcas:
             if nc[c] is None:
                 continue
-            pca, sc, mask = sensor_pcas[c]
-            x   = nc[c][mask]
-            if len(x) < 2:
-                continue
-            xs  = sc.transform(x.reshape(1,-1))
+            pca, sc_obj, mask = sensor_pcas[c]
+            x    = nc[c][mask]
+            ref  = sc_obj.mean_ 
+            corr = np.correlate(x - x.mean(), ref - ref.mean(), mode='full')
+            ms   = max(1, int(len(x) * 0.30))
+            ctr  = len(x) - 1
+            shift = np.argmax(corr[ctr - ms: ctr + ms + 1]) - ms
+            x_aligned = np.roll(x, -shift)
+            xs   = sc_obj.transform(x_aligned.reshape(1, -1))
             proj = pca.inverse_transform(pca.transform(xs))
-            errs.append(float(np.mean((xs-proj)**2)))
+            errs.append(float(np.mean((xs - proj) ** 2)))
         return np.mean(errs) if errs else np.nan
 
     holdout = [i for i in normal_cycle_indices if i not in template_global_idx_set]
@@ -419,7 +448,6 @@ def pca_amplitude_detection(raw_df, cols, all_cycles, template_global_idx_set, n
 
 
 # Per-Group Pipeline
-
 def run_pipeline_for_group(df, group_cols, group_period, group_id, min_cycles=3):
     print(f"\n{'='*65}")
     print(f"GROUP period={group_period}pts | {len(group_cols)} sensors")
@@ -435,7 +463,7 @@ def run_pipeline_for_group(df, group_cols, group_period, group_id, min_cycles=3)
 
     auto_window = max(10, group_period // 8)
     print(f"\n  STEP 2 – Correlation signal (window={auto_window})")
-    corr_train = correlation_strength(df_train, group_cols, auto_window)
+    corr_train, corr_train_signed = correlation_strength(df_train, group_cols, auto_window)
     print(f"    {len(corr_train)} pts | {corr_train.isna().sum()} NaN")
 
     if corr_train.dropna().std() < 1e-9:
@@ -445,7 +473,7 @@ def run_pipeline_for_group(df, group_cols, group_period, group_id, min_cycles=3)
     try:
         train_cycles, seg_method = detect_cycles_with_fallback(
             corr_train, df_train, group_cols,
-            forced_period=group_period)
+            forced_period=group_period)   # passes learned period as fallback
     except RuntimeError as e:
         print(f"  ✗ {e}"); return None
 
@@ -473,6 +501,7 @@ def run_pipeline_for_group(df, group_cols, group_period, group_id, min_cycles=3)
     print(f"\n  STEP 6 – Templates (window_size={window_size})")
     cluster_templates, cluster_medians = {}, {}
     cluster_thresholds, cluster_loo_scores = {}, {}
+    cluster_thresholds_low, cluster_thresholds_high = {}, {}
     template_global_idx_sets = {}
 
     for cid, cycle_indices in clusters.items():
@@ -483,16 +512,19 @@ def run_pipeline_for_group(df, group_cols, group_period, group_id, min_cycles=3)
             print(f"      ✗ {e}"); continue
         tmpl  = build_template(tn, window_size)
         med_c = np.median(tn, axis=0)
-        thr, loo = calibrate_threshold(tn, tmpl, med_c)
+        thr, loo, thr_low, thr_high = calibrate_threshold(tn, tmpl, med_c)
         cluster_templates[cid]        = tmpl
         cluster_medians[cid]          = med_c
         cluster_thresholds[cid]       = thr
+        cluster_thresholds_low[cid]   = thr_low
+        cluster_thresholds_high[cid]  = thr_high
         cluster_loo_scores[cid]       = loo
         template_global_idx_sets[cid] = set(tgi)
 
     if not cluster_templates:
         print("  ✗ No valid clusters"); return None
 
+    # Save train-relative index sets before remapping
     train_template_idx_sets = {
         cid: set(idx_set)
         for cid, idx_set in template_global_idx_sets.items()
@@ -502,8 +534,7 @@ def run_pipeline_for_group(df, group_cols, group_period, group_id, min_cycles=3)
         all_template_indices.update(s)
 
     print(f"\n  STEP 7 – Scoring test cycles (full stream)")
-    corr_full = correlation_strength(df_full, group_cols, auto_window)
-
+    corr_full, corr_full_signed = correlation_strength(df_full, group_cols, auto_window)
 
     if seg_method == "NaN boundary" or seg_method == "Consistent NaN gaps":
         try:
@@ -525,7 +556,6 @@ def run_pipeline_for_group(df, group_cols, group_period, group_id, min_cycles=3)
                 full_cycles.append((s, e, test_period))
 
     print(f"    Full stream cycles: {len(full_cycles)}")
-
 
     all_template_indices    = set()
     template_global_idx_sets = {}
@@ -563,17 +593,34 @@ def run_pipeline_for_group(df, group_cols, group_period, group_id, min_cycles=3)
         min_anom = max(2, int(tmpl['n_windows'] * 0.25))
         above    = np.sum(ws > thr)
         max_s    = np.max(ws)
-        is_anom  = (above >= min_anom) or (max_s > 2*thr)
+        is_anom   = (above >= min_anom) or (max_s > 2*thr)
+        thr_low   = cluster_thresholds_low[best_cid]
+        thr_high  = cluster_thresholds_high[best_cid]
+        alert_tier = grade_alert(max_s, thr, thr_low, thr_high)
         results.append({'cycle_idx': vi, 'cluster_id': best_cid,
                         'is_anomaly': is_anom, 'max_score': max_s,
                         'mean_score': np.mean(ws), 'windows_above_thresh': int(above),
                         'window_scores': ws, 'window_details': det,
-                        'shift_applied': shift, 'threshold': thr})
+                        'shift_applied': shift, 'threshold': thr,
+                        'alert_tier': alert_tier})
 
     all_cycles = full_cycles
     corr       = corr_full
 
     corr_anomalies = {r['cycle_idx'] for r in results if r['is_anomaly']}
+
+    signed_norm = [normalize_cycle(corr_full_signed, s, e, target_length)
+                   for s, e, _ in all_cycles]
+    for vi in valid_test:
+        if signed_norm[vi] is None: continue
+        best_cid = min(cluster_medians,
+                       key=lambda c: np.linalg.norm(signed_norm[vi] - cluster_medians[c]))
+        ws_s, _, _ = score_single_cycle(signed_norm[vi],
+                                        cluster_templates[best_cid],
+                                        cluster_medians[best_cid])
+        thr = cluster_thresholds[best_cid]
+        if np.max(ws_s) > 2*thr or np.sum(ws_s > thr) >= max(2, int(cluster_templates[best_cid]['n_windows'] * 0.25)):
+            corr_anomalies.add(vi)
 
 
 ####
@@ -615,10 +662,12 @@ def run_pipeline_for_group(df, group_cols, group_period, group_id, min_cycles=3)
             'all_template_indices': all_template_indices, 'results': results,
             'corr_anomalies': corr_anomalies, 'amp_anomalies': amp_anom,
             'amp_threshold': amp_thr, 'cycle_amp_scores': amp_scores,
-            'final_anomalies': final, 'both_methods': both}
+            'final_anomalies': final, 'both_methods': both,
+            'cluster_thresholds_low':  cluster_thresholds_low,
+            'cluster_thresholds_high': cluster_thresholds_high}
 
 
-# VISUALISATION 
+# VISUALISATION
 CMAP_CLUSTERS = ['#2563EB', '#059669', '#7C3AED', '#D97706', '#DC2626']
 
 def visualise_group(out, save_dir='group_plots'):
@@ -694,6 +743,7 @@ def visualise_group(out, save_dir='group_plots'):
                 fontsize=6, va='bottom', ha='left', color=col_border, clip_on=True)
 
     if all_tmpl:
+        # use train_end directly, not the last template cycle index
         train_end = out['train_end']
         ax.axvline(x=train_end, color='black', lw=1.5,
                 ls='--', label='Template / Test split')
@@ -982,7 +1032,7 @@ def print_group_report(out):
             if r:
                 tmpl = out['cluster_templates'][r['cluster_id']]
                 thr  = r['threshold']
-                print(f"  Cluster   : {r['cluster_id']}")
+                print(f"  Cluster   : {r['cluster_id']}  |  Alert tier: {r.get('alert_tier', '?')}")
                 print(f"  Corr      : max={r['max_score']:.2f}σ | mean={r['mean_score']:.2f}σ"
                       f" | shift={r['shift_applied']}"
                       f" | windows>{thr:.2f}: {r['windows_above_thresh']}/{tmpl['n_windows']}")
@@ -1003,7 +1053,6 @@ def print_group_report(out):
 
 # MAIN EXECUTION
 def estimate_period_from_corr(signal, min_period=10):
-    """FFT + autocorr on the correlation signal to get one global period."""
     clean = signal.dropna().values
     clean = clean - clean.mean()
     results = {}
@@ -1042,351 +1091,376 @@ def estimate_period_from_corr(signal, min_period=10):
         return combined, (c_ac+c_fft)/2
     return (p_ac, c_ac) if c_ac >= c_fft else (p_fft, c_fft)
 
-normal_end = int(len(df) * 0.75)
-df_normal  = df.iloc[:normal_end]
+# normal_end = int(len(df) * 0.75)
+# df_normal  = df.iloc[:normal_end]
 
-print("\nEstimating period from all-sensor correlation signal (normal region)...")
-auto_win_est = max(10, len(df_normal) // 500)
-corr_est = correlation_strength(df_normal, sensor_cols, auto_win_est)
-period, conf = estimate_period_from_corr(corr_est)
+# print("\nEstimating period from all-sensor correlation signal (normal region)...")
+# auto_win_est = max(10, len(df_normal) // 500)   # rough window for estimation
+# corr_est = correlation_strength(df_normal, sensor_cols, auto_win_est)
+# period, conf = estimate_period_from_corr(corr_est)
 
-if period is None:
-    print("  Could not estimate period — using fixed fallback of 50 samples")
-    period = 50
-print(f"  Period = {period} samples  (conf={conf:.4f})")
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--csv",  required=True)
+    parser.add_argument("--drop", nargs="*", default=[])
+    args = parser.parse_args()
 
-group_outputs = []
-out = run_pipeline_for_group(df, sensor_cols, period, group_id=period)
-if out is not None:
-    group_outputs.append(out)
+    df = pd.read_csv(args.csv)
+    drop_cols = [c for c in args.drop if c in df.columns]
+    if drop_cols:
+        df = df.drop(columns=drop_cols)
 
-# Print reports and generate visualizations
-print("\n\n" + "#"*70)
-print("# ANOMALY REPORTS — ALL GROUPS")
-print("#"*70)
+    sensor_cols = [c for c in df.columns if c != 'timestamp']
+    print(f"Loaded: {df.shape[0]} rows × {len(sensor_cols)} sensors")
 
-all_figs = {}
-for out in group_outputs:
-    print_group_report(out)
-    print(f"\n  Generating visualizations for group period={out['group_id']}pts...")
-    figs = visualise_group(out)
-    all_figs[out['group_id']] = figs
+    normal_end = int(len(df) * 0.75)
+    df_normal  = df.iloc[:normal_end]
 
-# Cross-group merge
-print(f"\n\n{'='*70}")
-print("CROSS-GROUP ANOMALY MERGE")
-print('='*70)
+    print("\nEstimating period from all-sensor correlation signal (normal region)...")
+    auto_win_est = max(10, len(df_normal) // 500)
+    corr_est, _ = correlation_strength(df_normal, sensor_cols, auto_win_est)
+    period, conf = estimate_period_from_corr(corr_est)
 
-all_flagged = []
-for out in group_outputs:
-    for ci in out['final_anomalies']:
-        start, end, _ = out['all_cycles'][ci]
-        in_c  = ci in out['corr_anomalies']
-        in_a  = ci in out['amp_anomalies']
-        det   = 'BOTH' if (in_c and in_a) else ('CORR' if in_c else 'AMP')
-        r     = next((r for r in out['results'] if r['cycle_idx']==ci), None)
-        all_flagged.append({
-            'group_period': out['group_period'],
-            'cycle_idx':    ci,
-            'idx_start':    start,
-            'idx_end':      end,
-            'det_type':     det,
-            'score':        r['max_score'] if r else None,
-            'sensors':      out['group_cols'],
-        })
+    if period is None:
+        print("  Could not estimate period — using fixed fallback of 50 samples")
+        period = 50
+    print(f"  Period = {period} samples  (conf={conf:.4f})")
 
-print(f"\nTotal anomaly events: {len(all_flagged)}")
-print(f"\nBy group:")
-for out in group_outputs:
-    n = len(out['final_anomalies'])
-    print(f"  period={out['group_period']:>4}pts | {n} anomalies | {len(out['group_cols'])} sensors")
+    group_outputs = []
+    out = run_pipeline_for_group(df, sensor_cols, period, group_id=period)
+    if out is not None:
+        group_outputs.append(out)
 
-print(f"\nAll anomalous events (sorted by time index):")
-print(f"{'─'*70}")
-for f in sorted(all_flagged, key=lambda x: x['idx_start']):
-    sc = f"{f['score']:.2f}σ" if f['score'] is not None else "—"
-    print(f"  [{f['det_type']:<4}]  idx {f['idx_start']:>4}→{f['idx_end']:>4}  "
-          f"| group={f['group_period']}pts  | score={sc}")
 
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
+    # Print reports and generate visualizations
+    print("\n\n" + "#"*70)
+    print("# ANOMALY REPORTS — ALL GROUPS")
+    print("#"*70)
 
-# PLOTLY VISUALIZATIONS
-PLOTLY_DIR = 'group_plots'
-def save_plotly_html(fig, path):
-    os.makedirs(os.path.dirname(path) if os.path.dirname(path) else '.', exist_ok=True)
-    fig.write_html(path, include_plotlyjs='cdn', full_html=True)
-    print(f"  [HTML] saved → {path}")
+    all_figs = {}
+    for out in group_outputs:
+        print_group_report(out)
+        print(f"\n  Generating visualizations for group period={out['group_id']}pts...")
+        figs = visualise_group(out)
+        all_figs[out['group_id']] = figs
 
-CLUSTER_COLORS = [
-    ('rgba(0,100,255,0.12)',  'rgba(0,100,255,0.6)'),
-    ('rgba(0,180,130,0.12)', 'rgba(0,180,130,0.6)'),
-    ('rgba(180,0,180,0.12)', 'rgba(180,0,180,0.6)'),
-    ('rgba(255,140,0,0.12)', 'rgba(255,140,0,0.6)'),
-    ('rgba(100,100,0,0.12)', 'rgba(100,100,0,0.6)'),
-]
+    # Cross-group merge
+    print(f"\n\n{'='*70}")
+    print("CROSS-GROUP ANOMALY MERGE")
+    print('='*70)
 
-for out in group_outputs:
-    gid         = out['group_id']
-    corr_full   = out['corr']
-    all_cycles  = out['all_cycles']
-    clusters    = out['clusters']
-    all_template_indices = out['all_template_indices']
-    template_global_idx_sets = out['template_global_idx_sets']
-    corr_anomalies    = out['corr_anomalies']
-    amplitude_anomalies = out['amp_anomalies']
-    cycle_amp_scores  = out['cycle_amp_scores']
-    results           = out['results']
-    all_normalised    = out['all_normalised']
-    cluster_templates = out['cluster_templates']
-    cluster_medians   = out['cluster_medians']
-    cluster_thresholds = out['cluster_thresholds']
-    final_anomalies   = out['final_anomalies']
-    seg_method        = out['seg_method']
-    target_length     = out['target_length']
-    window_size       = out['window_size']
-    n_clusters        = len(clusters)
+    all_flagged = []
+    for out in group_outputs:
+        for ci in out['final_anomalies']:
+            start, end, _ = out['all_cycles'][ci]
+            in_c  = ci in out['corr_anomalies']
+            in_a  = ci in out['amp_anomalies']
+            det   = 'BOTH' if (in_c and in_a) else ('CORR' if in_c else 'AMP')
+            r     = next((r for r in out['results'] if r['cycle_idx']==ci), None)
+            all_flagged.append({
+                'group_period': out['group_period'],
+                'cycle_idx':    ci,
+                'idx_start':    start,
+                'idx_end':      end,
+                'det_type':     det,
+                'score':        r['max_score'] if r else None,
+                'sensors':      out['group_cols'],
+            })
 
-    print(f"\n{'='*60}")
-    print(f"PLOTLY PLOTS — Group period={gid}pts")
-    print(f"{'='*60}")
+    print(f"\nTotal anomaly events: {len(all_flagged)}")
+    print(f"\nBy group:")
+    for out in group_outputs:
+        n = len(out['final_anomalies'])
+        print(f"  period={out['group_period']:>4}pts | {n} anomalies | {len(out['group_cols'])} sensors")
 
-    fig1 = go.Figure()
-    fig1.add_trace(go.Scatter(
-        x=corr_full.index, y=corr_full.values,
-        name="Correlation Strength",
-        line=dict(width=1.5, color='steelblue'), connectgaps=False
-    ))
+    print(f"\nAll anomalous events (sorted by time index):")
+    print(f"{'─'*70}")
+    for f in sorted(all_flagged, key=lambda x: x['idx_start']):
+        sc = f"{f['score']:.2f}σ" if f['score'] is not None else "—"
+        print(f"  [{f['det_type']:<4}]  idx {f['idx_start']:>4}→{f['idx_end']:>4}  "
+            f"| group={f['group_period']}pts  | score={sc}")
 
-    valid_corr = corr_full.dropna()
-    y_min = float(valid_corr.min()) if len(valid_corr) else 0
-    y_max = float(valid_corr.max()) if len(valid_corr) else 1
+    import plotly.graph_objects as go
+    from plotly.subplots import make_subplots
 
-    #last_tmpl_end = max((all_cycles[j][1] for j in all_template_indices if j < len(all_cycles)), default=0) if all_template_indices else 0
+    # PLOTLY VISUALIZATIONS
+    PLOTLY_DIR = 'group_plots'
+    def save_plotly_html(fig, path):
+        os.makedirs(os.path.dirname(path) if os.path.dirname(path) else '.', exist_ok=True)
+        fig.write_html(path, include_plotlyjs='cdn', full_html=True)
+        print(f"  [HTML] saved → {path}")
 
-    for i, (start, end, length) in enumerate(all_cycles):
-        cycle_cluster = next((cid for cid, idxs in clusters.items() if i in idxs), None)
-        in_corr     = i in corr_anomalies
-        in_amp      = i in amplitude_anomalies
-        #in_template = (i in all_template_indices) or (end <= last_tmpl_end and not in_corr and not in_amp)
-        in_template = i in all_template_indices
+    CLUSTER_COLORS = [
+        ('rgba(0,100,255,0.12)',  'rgba(0,100,255,0.6)'),
+        ('rgba(0,180,130,0.12)', 'rgba(0,180,130,0.6)'),
+        ('rgba(180,0,180,0.12)', 'rgba(180,0,180,0.6)'),
+        ('rgba(255,140,0,0.12)', 'rgba(255,140,0,0.6)'),
+        ('rgba(100,100,0,0.12)', 'rgba(100,100,0,0.6)'),
+    ]
 
-        xe = min(end, len(corr_full) - 1)
+    for out in group_outputs:
+        gid         = out['group_id']
+        corr_full   = out['corr']
+        all_cycles  = out['all_cycles']
+        clusters    = out['clusters']
+        all_template_indices = out['all_template_indices']
+        template_global_idx_sets = out['template_global_idx_sets']
+        corr_anomalies    = out['corr_anomalies']
+        amplitude_anomalies = out['amp_anomalies']
+        cycle_amp_scores  = out['cycle_amp_scores']
+        results           = out['results']
+        all_normalised    = out['all_normalised']
+        cluster_templates = out['cluster_templates']
+        cluster_medians   = out['cluster_medians']
+        cluster_thresholds = out['cluster_thresholds']
+        final_anomalies   = out['final_anomalies']
+        seg_method        = out['seg_method']
+        target_length     = out['target_length']
+        window_size       = out['window_size']
+        n_clusters        = len(clusters)
 
-        if in_template:
-            col = cycle_cluster % len(CLUSTER_COLORS) if cycle_cluster is not None else 0
-            cfill, cborder = CLUSTER_COLORS[col]
-            label = f"T{i+1}"
-        elif in_corr and in_amp:
-            cfill, cborder = 'rgba(139,0,0,0.28)', 'darkred'
-            r = next((r for r in results if r['cycle_idx'] == i), None)
-            label = f"A{i+1} BOTH {r['max_score']:.1f}σ" if r else f"A{i+1} BOTH"
-        elif in_corr:
-            cfill, cborder = 'rgba(220,50,50,0.20)', 'red'
-            r = next((r for r in results if r['cycle_idx'] == i), None)
-            label = f"A{i+1} CORR {r['max_score']:.1f}σ" if r else f"A{i+1} CORR"
-        elif in_amp:
-            cfill, cborder = 'rgba(255,140,0,0.22)', 'darkorange'
-            amp = cycle_amp_scores[i]
-            label = f"A{i+1} AMP {amp:.3f}" if amp is not None else f"A{i+1} AMP"
-        else:
-            cfill, cborder = 'rgba(50,180,50,0.15)', 'rgba(50,180,50,0.7)'
-            label = f"N{i+1}"
+        print(f"\n{'='*60}")
+        print(f"PLOTLY PLOTS — Group period={gid}pts")
+        print(f"{'='*60}")
 
-        fig1.add_shape(
-            type="rect",
-            x0=corr_full.index[start], x1=corr_full.index[xe],
-            y0=y_min, y1=y_max,
-            fillcolor=cfill, line=dict(width=1.5, color=cborder), layer="below"
-        )
-        fig1.add_annotation(
-            x=corr_full.index[start], y=y_max,
-            text=label, showarrow=False,
-            xanchor="left", yanchor="top",
-            bgcolor="white", bordercolor=cborder, borderwidth=1,
-            font=dict(size=8)
-        )
-
-    if all_template_indices:
-        split_x = out['train_end']
-        fig1.add_shape(type="line",
-            x0=split_x, x1=split_x, y0=y_min, y1=y_max,
-            line=dict(color="black", width=2, dash="dash"))
-        fig1.add_annotation(x=split_x, y=y_max,
-            text="Template / Test Split", showarrow=False, yshift=10,
-            bgcolor="white", bordercolor="black", borderwidth=1)
-
-    fig1.update_layout(
-        title=(f"Group {gid}pts | seg={seg_method} | {n_clusters} cluster(s) | "
-               f"{len(final_anomalies)} anomalies "
-               f"(corr={len(corr_anomalies)}, amp={len(amplitude_anomalies)})"),
-        xaxis_title="Sample index", yaxis_title="Correlation Strength",
-        template="plotly_white", height=500
-    )
-    save_plotly_html(fig1, f"{PLOTLY_DIR}/group_{gid:04d}_plotly_fig1_signal.html")
-
-    for cid in cluster_templates:
-        tmpl      = cluster_templates[cid]
-        median_c  = cluster_medians[cid]
-        threshold = cluster_thresholds[cid]
-        tmpl_norm = [all_normalised[i] for i in template_global_idx_sets[cid]
-             if i < len(all_normalised) and all_normalised[i] is not None]
-
-        fig2 = go.Figure()
-        x_pos = np.arange(target_length)
-
-        for k, nc in enumerate(tmpl_norm):
-            fig2.add_trace(go.Scatter(
-                x=x_pos, y=nc, mode='lines',
-                line=dict(color='lightblue', width=1), opacity=0.4,
-                showlegend=(k == 0), name="Template cycles", legendgroup="tmpl"
-            ))
-        fig2.add_trace(go.Scatter(
-            x=x_pos, y=median_c, mode='lines',
-            line=dict(color='royalblue', width=2.5), name="Template median"
+        fig1 = go.Figure()
+        fig1.add_trace(go.Scatter(
+            x=corr_full.index, y=corr_full.values,
+            name="Correlation Strength",
+            line=dict(width=1.5, color='steelblue'), connectgaps=False
         ))
 
-        shown_anom, shown_norm = False, False
-        for r in results:
-            if r['cluster_id'] != cid:
-                continue
-            vi = r['cycle_idx']
-            nc = all_normalised[vi]
-            if nc is None:
-                continue
-            s, e, _ = all_cycles[vi]
-            if r['is_anomaly']:
-                fig2.add_trace(go.Scatter(
-                    x=x_pos, y=nc, mode='lines',
-                    line=dict(color='red', width=2), opacity=0.8,
-                    showlegend=not shown_anom, name="Anomalous", legendgroup="anom",
-                    hovertemplate=f"<b>Cycle {vi+1}</b> max={r['max_score']:.2f}σ<br>idx {s}→{e}<extra></extra>"
-                ))
-                shown_anom = True
+        valid_corr = corr_full.dropna()
+        y_min = float(valid_corr.min()) if len(valid_corr) else 0
+        y_max = float(valid_corr.max()) if len(valid_corr) else 1
+
+        #last_tmpl_end = max((all_cycles[j][1] for j in all_template_indices if j < len(all_cycles)), default=0) if all_template_indices else 0
+
+        for i, (start, end, length) in enumerate(all_cycles):
+            cycle_cluster = next((cid for cid, idxs in clusters.items() if i in idxs), None)
+            in_corr     = i in corr_anomalies
+            in_amp      = i in amplitude_anomalies
+            #in_template = (i in all_template_indices) or (end <= last_tmpl_end and not in_corr and not in_amp)
+            in_template = i in all_template_indices
+
+            xe = min(end, len(corr_full) - 1)
+
+            if in_template:
+                col = cycle_cluster % len(CLUSTER_COLORS) if cycle_cluster is not None else 0
+                cfill, cborder = CLUSTER_COLORS[col]
+                label = f"T{i+1}"
+            elif in_corr and in_amp:
+                cfill, cborder = 'rgba(139,0,0,0.28)', 'darkred'
+                r = next((r for r in results if r['cycle_idx'] == i), None)
+                label = f"A{i+1} BOTH {r['max_score']:.1f}σ" if r else f"A{i+1} BOTH"
+            elif in_corr:
+                cfill, cborder = 'rgba(220,50,50,0.20)', 'red'
+                r = next((r for r in results if r['cycle_idx'] == i), None)
+                label = f"A{i+1} CORR {r['max_score']:.1f}σ" if r else f"A{i+1} CORR"
+            elif in_amp:
+                cfill, cborder = 'rgba(255,140,0,0.22)', 'darkorange'
+                amp = cycle_amp_scores[i]
+                label = f"A{i+1} AMP {amp:.3f}" if amp is not None else f"A{i+1} AMP"
             else:
-                fig2.add_trace(go.Scatter(
-                    x=x_pos, y=nc, mode='lines',
-                    line=dict(color='mediumseagreen', width=1.2), opacity=0.35,
-                    showlegend=not shown_norm, name="Normal test", legendgroup="norm",
-                    hovertemplate=f"<b>Cycle {vi+1}</b> normal<br>idx {s}→{e}<extra></extra>"
-                ))
-                shown_norm = True
+                cfill, cborder = 'rgba(50,180,50,0.15)', 'rgba(50,180,50,0.7)'
+                label = f"N{i+1}"
 
-        x_win = np.arange(tmpl['n_windows']) * window_size + window_size / 2
-        fig2.add_trace(go.Scatter(
-            x=x_win, y=tmpl['mean_of_means'],
-            mode='lines+markers', line=dict(color='darkred', width=2),
-            marker=dict(size=7), name="Window mean"
-        ))
-        fig2.add_trace(go.Scatter(
-            x=x_win, y=tmpl['mean_of_means'] + 2*tmpl['std_of_means'],
-            mode='lines', line=dict(color='darkred', width=1, dash='dash'), name="±2σ band"
-        ))
-        fig2.add_trace(go.Scatter(
-            x=x_win, y=tmpl['mean_of_means'] - 2*tmpl['std_of_means'],
-            mode='lines', line=dict(color='darkred', width=1, dash='dash'),
-            showlegend=False, fill='tonexty', fillcolor='rgba(180,0,0,0.07)'
-        ))
-        fig2.update_layout(
-            title=f"Group {gid}pts — Cluster {cid} normalised cycles | thr={threshold:.3f}",
-            xaxis_title="Normalised position", yaxis_title="Correlation strength",
+            fig1.add_shape(
+                type="rect",
+                x0=corr_full.index[start], x1=corr_full.index[xe],
+                y0=y_min, y1=y_max,
+                fillcolor=cfill, line=dict(width=1.5, color=cborder), layer="below"
+            )
+            fig1.add_annotation(
+                x=corr_full.index[start], y=y_max,
+                text=label, showarrow=False,
+                xanchor="left", yanchor="top",
+                bgcolor="white", bordercolor=cborder, borderwidth=1,
+                font=dict(size=8)
+            )
+
+        if all_template_indices:
+            split_x = out['train_end']
+            fig1.add_shape(type="line",
+                x0=split_x, x1=split_x, y0=y_min, y1=y_max,
+                line=dict(color="black", width=2, dash="dash"))
+            fig1.add_annotation(x=split_x, y=y_max,
+                text="Template / Test Split", showarrow=False, yshift=10,
+                bgcolor="white", bordercolor="black", borderwidth=1)
+
+        fig1.update_layout(
+            title=(f"Group {gid}pts | seg={seg_method} | {n_clusters} cluster(s) | "
+                f"{len(final_anomalies)} anomalies "
+                f"(corr={len(corr_anomalies)}, amp={len(amplitude_anomalies)})"),
+            xaxis_title="Sample index", yaxis_title="Correlation Strength",
             template="plotly_white", height=500
         )
-        save_plotly_html(fig2, f"{PLOTLY_DIR}/group_{gid:04d}_plotly_fig2_cycles_cluster{cid}.html")
+        save_plotly_html(fig1, f"{PLOTLY_DIR}/group_{gid:04d}_plotly_fig1_signal.html")
 
-    amp_thr = out['amp_threshold']
-    valid_amp = [(i, s) for i, s in enumerate(cycle_amp_scores)
-                 if s is not None and not np.isnan(s)]
+        for cid in cluster_templates:
+            tmpl      = cluster_templates[cid]
+            median_c  = cluster_medians[cid]
+            threshold = cluster_thresholds[cid]
+            tmpl_norm = [all_normalised[i] for i in template_global_idx_sets[cid]
+                if i < len(all_normalised) and all_normalised[i] is not None]
 
-    if valid_amp and amp_thr is not None:
-        idxs_amp, scores_amp = zip(*valid_amp)
-        colors_amp = ['red' if i in amplitude_anomalies else 'steelblue' for i in idxs_amp]
-        fig3 = go.Figure()
-        fig3.add_trace(go.Bar(
-            x=[f"C{i+1}" for i in idxs_amp], y=scores_amp,
-            marker_color=colors_amp, name="PCA recon error",
-            hovertemplate="Cycle %{x}<br>Error: %{y:.4f}<extra></extra>"
-        ))
-        fig3.add_hline(y=amp_thr, line_color="red", line_dash="dash",
-                       annotation_text=f"Threshold={amp_thr:.4f}")
-        fig3.update_layout(
-            title=f"Group {gid}pts — PCA amplitude scores per cycle",
-            xaxis_title="Cycle", yaxis_title="Reconstruction error",
-            template="plotly_white", height=400
-        )
-        save_plotly_html(fig3, f"{PLOTLY_DIR}/group_{gid:04d}_plotly_fig3_amplitude.html")
+            fig2 = go.Figure()
+            x_pos = np.arange(target_length)
 
-    # anom_res = [r for r in results if r['is_anomaly']]
-    # if anom_res:
-    #     nw_max  = max(r['window_scores'].shape[0] for r in anom_res)
-    #     labels  = [f"C{r['cycle_idx']+1}" for r in anom_res]
-    #     matrix  = np.array([
-    #         np.pad(r['window_scores'], (0, nw_max - len(r['window_scores'])))
-    #         for r in anom_res
-    #     ])
-    #     fig4 = go.Figure(go.Heatmap(
-    #         z=matrix, x=[f"Win {w}" for w in range(nw_max)], y=labels,
-    #         colorscale='RdBu_r', text=np.round(matrix, 2), texttemplate="%{text}",
-    #         hovertemplate="Cycle %{y} | %{x}<br>Score: %{z:.2f}<extra></extra>"
-    #     ))
-    #     for yi, (r, thr_v) in enumerate(zip(anom_res, [r['threshold'] for r in anom_res])):
-    #         for xi, sc in enumerate(r['window_scores']):
-    #             if sc > thr_v:
-    #                 fig4.add_shape(type="rect",
-    #                     x0=xi-0.5, x1=xi+0.5, y0=yi-0.5, y1=yi+0.5,
-    #                     line=dict(color="black", width=2), fillcolor="rgba(0,0,0,0)")
-    #     fig4.update_layout(
-    #         title=f"Group {gid}pts — Window z-scores for anomalous cycles (black=above threshold)",
-    #         template="plotly_white", height=max(300, len(anom_res)*60 + 150)
-    #     )
-    #     save_plotly_html(fig4, f"{PLOTLY_DIR}/group_{gid:04d}_plotly_fig4_heatmap.html")
+            for k, nc in enumerate(tmpl_norm):
+                fig2.add_trace(go.Scatter(
+                    x=x_pos, y=nc, mode='lines',
+                    line=dict(color='lightblue', width=1), opacity=0.4,
+                    showlegend=(k == 0), name="Template cycles", legendgroup="tmpl"
+                ))
+            fig2.add_trace(go.Scatter(
+                x=x_pos, y=median_c, mode='lines',
+                line=dict(color='royalblue', width=2.5), name="Template median"
+            ))
 
-print(f"\n\n{'='*70}")
-print("PIPELINE COMPLETE")
-print('='*70)
-print(f"  Groups processed    : {len(group_outputs)}")
-print(f"  Total anomaly events: {len(all_flagged)}")
-print(f"  Plot files saved to : group_plots/")
-for gid, figs in all_figs.items():
-    print(f"\n  Group period={gid}pts:")
-    for f in figs:
-        print(f"    {os.path.basename(f)}")
+            shown_anom, shown_norm = False, False
+            for r in results:
+                if r['cluster_id'] != cid:
+                    continue
+                vi = r['cycle_idx']
+                nc = all_normalised[vi]
+                if nc is None:
+                    continue
+                s, e, _ = all_cycles[vi]
+                if r['is_anomaly']:
+                    fig2.add_trace(go.Scatter(
+                        x=x_pos, y=nc, mode='lines',
+                        line=dict(color='red', width=2), opacity=0.8,
+                        showlegend=not shown_anom, name="Anomalous", legendgroup="anom",
+                        hovertemplate=f"<b>Cycle {vi+1}</b> max={r['max_score']:.2f}σ<br>idx {s}→{e}<extra></extra>"
+                    ))
+                    shown_anom = True
+                else:
+                    fig2.add_trace(go.Scatter(
+                        x=x_pos, y=nc, mode='lines',
+                        line=dict(color='mediumseagreen', width=1.2), opacity=0.35,
+                        showlegend=not shown_norm, name="Normal test", legendgroup="norm",
+                        hovertemplate=f"<b>Cycle {vi+1}</b> normal<br>idx {s}→{e}<extra></extra>"
+                    ))
+                    shown_norm = True
 
-# EXPORT ANOMALY SEQUENCES TO CSV
-import csv
+            x_win = np.arange(tmpl['n_windows']) * window_size + window_size / 2
+            fig2.add_trace(go.Scatter(
+                x=x_win, y=tmpl['mean_of_means'],
+                mode='lines+markers', line=dict(color='darkred', width=2),
+                marker=dict(size=7), name="Window mean"
+            ))
+            fig2.add_trace(go.Scatter(
+                x=x_win, y=tmpl['mean_of_means'] + 2*tmpl['std_of_means'],
+                mode='lines', line=dict(color='darkred', width=1, dash='dash'), name="±2σ band"
+            ))
+            fig2.add_trace(go.Scatter(
+                x=x_win, y=tmpl['mean_of_means'] - 2*tmpl['std_of_means'],
+                mode='lines', line=dict(color='darkred', width=1, dash='dash'),
+                showlegend=False, fill='tonexty', fillcolor='rgba(180,0,0,0.07)'
+            ))
+            fig2.update_layout(
+                title=f"Group {gid}pts — Cluster {cid} normalised cycles | thr={threshold:.3f}",
+                xaxis_title="Normalised position", yaxis_title="Correlation strength",
+                template="plotly_white", height=500
+            )
+            save_plotly_html(fig2, f"{PLOTLY_DIR}/group_{gid:04d}_plotly_fig2_cycles_cluster{cid}.html")
 
-if all_flagged:
-    anomaly_rows = []
-    for out in group_outputs:
-        gid = out['group_id']
-        for ci in sorted(out['final_anomalies']):
-            start, end, length = out['all_cycles'][ci]
-            in_c = ci in out['corr_anomalies']
-            in_a = ci in out['amp_anomalies']
-            det  = 'BOTH' if (in_c and in_a) else ('CORR' if in_c else 'AMP')
-            r    = next((r for r in out['results'] if r['cycle_idx'] == ci), None)
+        amp_thr = out['amp_threshold']
+        valid_amp = [(i, s) for i, s in enumerate(cycle_amp_scores)
+                    if s is not None and not np.isnan(s)]
 
-            # Pull the raw sensor values for this cycle's index range
-            cycle_df = df.iloc[start:end+1].copy()
-            cycle_df.insert(0, 'sample_index', range(start, end+1))
-            cycle_df.insert(1, 'cycle_idx',    ci + 1)
-            cycle_df.insert(2, 'group_period', gid)
-            cycle_df.insert(3, 'cycle_start',  start)
-            cycle_df.insert(4, 'cycle_end',    end)
-            cycle_df.insert(5, 'cycle_length', length)
-            cycle_df.insert(6, 'detection_type', det)
-            cycle_df.insert(7, 'max_corr_score',
-                            round(r['max_score'], 4) if r else None)
-            cycle_df.insert(8, 'amp_recon_error',
-                            round(out['cycle_amp_scores'][ci], 5)
-                            if out['cycle_amp_scores'][ci] is not None else None)
-            anomaly_rows.append(cycle_df)
+        if valid_amp and amp_thr is not None:
+            idxs_amp, scores_amp = zip(*valid_amp)
+            colors_amp = ['red' if i in amplitude_anomalies else 'steelblue' for i in idxs_amp]
+            fig3 = go.Figure()
+            fig3.add_trace(go.Bar(
+                x=[f"C{i+1}" for i in idxs_amp], y=scores_amp,
+                marker_color=colors_amp, name="PCA recon error",
+                hovertemplate="Cycle %{x}<br>Error: %{y:.4f}<extra></extra>"
+            ))
+            fig3.add_hline(y=amp_thr, line_color="red", line_dash="dash",
+                        annotation_text=f"Threshold={amp_thr:.4f}")
+            fig3.update_layout(
+                title=f"Group {gid}pts — PCA amplitude scores per cycle",
+                xaxis_title="Cycle", yaxis_title="Reconstruction error",
+                template="plotly_white", height=400
+            )
+            save_plotly_html(fig3, f"{PLOTLY_DIR}/group_{gid:04d}_plotly_fig3_amplitude.html")
 
-    anomaly_csv = pd.concat(anomaly_rows, ignore_index=True)
-    out_path    = 'group_plots/anomaly_sequences.csv'
-    anomaly_csv.to_csv(out_path, index=False)
-    print(f"\n  Anomaly sequences CSV saved → {out_path}")
-    print(f"  Rows: {len(anomaly_csv)} | Anomalous cycles: {len(anomaly_rows)}")
-    print(f"  Columns: {list(anomaly_csv.columns)}")
-else:
-    print("\n  No anomalies detected — CSV not generated.")
+        # anom_res = [r for r in results if r['is_anomaly']]
+        # if anom_res:
+        #     nw_max  = max(r['window_scores'].shape[0] for r in anom_res)
+        #     labels  = [f"C{r['cycle_idx']+1}" for r in anom_res]
+        #     matrix  = np.array([
+        #         np.pad(r['window_scores'], (0, nw_max - len(r['window_scores'])))
+        #         for r in anom_res
+        #     ])
+        #     fig4 = go.Figure(go.Heatmap(
+        #         z=matrix, x=[f"Win {w}" for w in range(nw_max)], y=labels,
+        #         colorscale='RdBu_r', text=np.round(matrix, 2), texttemplate="%{text}",
+        #         hovertemplate="Cycle %{y} | %{x}<br>Score: %{z:.2f}<extra></extra>"
+        #     ))
+        #     for yi, (r, thr_v) in enumerate(zip(anom_res, [r['threshold'] for r in anom_res])):
+        #         for xi, sc in enumerate(r['window_scores']):
+        #             if sc > thr_v:
+        #                 fig4.add_shape(type="rect",
+        #                     x0=xi-0.5, x1=xi+0.5, y0=yi-0.5, y1=yi+0.5,
+        #                     line=dict(color="black", width=2), fillcolor="rgba(0,0,0,0)")
+        #     fig4.update_layout(
+        #         title=f"Group {gid}pts — Window z-scores for anomalous cycles (black=above threshold)",
+        #         template="plotly_white", height=max(300, len(anom_res)*60 + 150)
+        #     )
+        #     save_plotly_html(fig4, f"{PLOTLY_DIR}/group_{gid:04d}_plotly_fig4_heatmap.html")
+
+    print(f"\n\n{'='*70}")
+    print("PIPELINE COMPLETE")
+    print('='*70)
+    print(f"  Groups processed    : {len(group_outputs)}")
+    print(f"  Total anomaly events: {len(all_flagged)}")
+    print(f"  Plot files saved to : group_plots/")
+    for gid, figs in all_figs.items():
+        print(f"\n  Group period={gid}pts:")
+        for f in figs:
+            print(f"    {os.path.basename(f)}")
+
+    # EXPORT ANOMALY SEQUENCES TO CSV
+    import csv  
+
+    if all_flagged:
+        anomaly_rows = []
+        for out in group_outputs:
+            gid = out['group_id']
+            for ci in sorted(out['final_anomalies']):
+                start, end, length = out['all_cycles'][ci]
+                in_c = ci in out['corr_anomalies']
+                in_a = ci in out['amp_anomalies']
+                det  = 'BOTH' if (in_c and in_a) else ('CORR' if in_c else 'AMP')
+                r    = next((r for r in out['results'] if r['cycle_idx'] == ci), None)
+
+                # Pull the raw sensor values for this cycle's index range
+                cycle_df = df.iloc[start:end+1].copy()
+                cycle_df.insert(0, 'sample_index', range(start, end+1))
+                cycle_df.insert(1, 'cycle_idx',    ci + 1)
+                cycle_df.insert(2, 'group_period', gid)
+                cycle_df.insert(3, 'cycle_start',  start)
+                cycle_df.insert(4, 'cycle_end',    end)
+                cycle_df.insert(5, 'cycle_length', length)
+                cycle_df.insert(6, 'detection_type', det)
+                cycle_df.insert(7, 'alert_tier', r.get('alert_tier', None) if r else None)
+                cycle_df.insert(8, 'max_corr_score',
+                                round(r['max_score'], 4) if r else None)
+                cycle_df.insert(9, 'amp_recon_error',
+                                round(out['cycle_amp_scores'][ci], 5)
+                                if out['cycle_amp_scores'][ci] is not None else None)
+                anomaly_rows.append(cycle_df)
+
+        anomaly_csv = pd.concat(anomaly_rows, ignore_index=True)
+        out_path    = 'group_plots/anomaly_sequences.csv'
+        anomaly_csv.to_csv(out_path, index=False)
+        print(f"\n  Anomaly sequences CSV saved → {out_path}")
+        print(f"  Rows: {len(anomaly_csv)} | Anomalous cycles: {len(anomaly_rows)}")
+        print(f"  Columns: {list(anomaly_csv.columns)}")
+    else:
+        print("\n  No anomalies detected — CSV not generated.")

@@ -19,9 +19,9 @@ class CFG:
     drop        = ['tachometer', 'microphone']
     timestamp   = 'timestamp'
     train_frac  = 0.75
-    min_corr    = 0.15    # min mean |corr| for a sensor pair to be grouped
+    min_corr    = 0.15    
     out         = 'ccad_adequacy_report.txt'
-    plot        = True    # set False to skip diagnostic plots
+    plot        = True
 
 
 # UTILITIES
@@ -316,19 +316,24 @@ def score_sensor_completeness(n_passed, n_total):
 
 def overall_score(scores_dict):
     weights = {
-        'correlation_strength': 0.25,
-        'periodicity':          0.30,
-        'period_stability':     0.20,
-        'training_purity':      0.10,
-        'shape_consistency':    0.10,
+        'correlation_strength': 0.35,
+        'periodicity':          0.15,
+        'period_stability':     0.10,
+        'training_purity':      0.05,
+        'shape_consistency':    0.30,
         'sensor_completeness':  0.05,
     }
     total = 0.0
     for k, w in weights.items():
         v = scores_dict.get(k, 0.0)
         total += w * v
-    return float(total)
 
+    if scores_dict.get('correlation_strength', 0.0) < 0.60:
+        total = min(total, 0.55)
+    if scores_dict.get('shape_consistency', 0.0) < 0.55:
+        total = min(total, 0.60)
+
+    return float(total)
 
 def adequacy_label(score):
     if score >= 0.75:
@@ -471,7 +476,11 @@ def format_group_report(g, idx):
     lines.append('')
     lines.append(f'  OVERALL ADEQUACY        {score_bar(g["overall"])}  {g["label"]}')
 
-    # Failure reasons
+    if s['correlation_strength'] < 0.60:
+        lines.append(f'  Correlation gate fired (corr_score={s["correlation_strength"]:.2f} < 0.60) — score capped at 0.55')
+    if s['shape_consistency'] < 0.55:
+        lines.append(f'  Shape gate fired (shape_score={s["shape_consistency"]:.2f} < 0.55) — score capped at 0.60')
+
     reasons = []
     if s['correlation_strength'] < 0.30:
         reasons.append('weak inter-sensor correlation')

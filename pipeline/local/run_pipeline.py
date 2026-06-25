@@ -66,6 +66,7 @@ python train.py \\
   --gru_hid_dim 300 \\
   --fc_hid_dim 300 \\
   --recon_hid_dim 300 \\
+  --stream_name {stream} \\
   --gamma 0.8 \\
   --init_lr 0.001 \\
   --bs 256 \\
@@ -280,9 +281,11 @@ def download_scores(cfg: dict, stream: str, local_handoff: str) -> str | None:
     return None
 
 
+# Lazy imports
+
 def _import_adequacy():
     try:
-        return __import__("CCAD_check")
+        return __import__("CCAD_check")  
     except ImportError:
         print("adequacy checker not found.")
         sys.exit(1)
@@ -290,7 +293,7 @@ def _import_adequacy():
 
 def _import_pipeline():
     try:
-        return __import__("CCAD")
+        return __import__("CCAD")  
     except ImportError:
         print("ERROR: CCAD pipeline not found.")
         sys.exit(1)
@@ -348,7 +351,7 @@ def run_statistical(df, sensor_cols, period=None):
     pipe         = _import_pipeline()
     normal_end   = int(len(df) * 0.75)
     auto_win_est = max(10, normal_end // 500)
-    corr_est     = pipe.correlation_strength(df.iloc[:normal_end], sensor_cols, auto_win_est)
+    corr_est, _ = pipe.correlation_strength(df.iloc[:normal_end], sensor_cols, auto_win_est)
 
     if period is None:
         period, _ = pipe.estimate_period_from_corr(corr_est)
@@ -368,7 +371,11 @@ def _resolve_dl_threshold(dl_data: dict) -> float | None:
     print(f"  dl_threshold: raw={raw_thr:.6f}  p95_floor={floor:.6f}  using={resolved:.6f}")
     return resolved
 
+def slice_scores_to_train(scores, all_cycles, train_end):
 
+    train_mask = [i for i, (s, e, _) in enumerate(all_cycles) if e <= train_end]
+    arr = np.array(scores, dtype=float)
+    return arr[train_mask] if len(train_mask) else arr
 
 def main():
     parser = argparse.ArgumentParser(description="Hybrid anomaly detection pipeline")
@@ -567,7 +574,8 @@ def main():
         train_end    = stat_out["train_end"]
         tr_idx       = [i for i, (s, e, _) in enumerate(all_cycles) if e <= train_end]
         stat_train   = stat_scores[tr_idx] if tr_idx else stat_scores
-        dl_for_fit = dl_full[~np.isnan(dl_full)]  # use full stream, not just train
+        dl_train   = slice_scores_to_train(dl_full, all_cycles, train_end)
+        dl_for_fit = dl_train[~np.isnan(dl_train)]
         dl_for_fit = dl_for_fit if len(dl_for_fit) else np.zeros(1)
         fuser.fit(stat_train, dl_for_fit)
 
