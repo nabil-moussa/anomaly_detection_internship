@@ -2,4 +2,6 @@ Note that the pipeline described in the paper is all inside the "pipeline" folde
 
 The streams A and B mentioned in the paper are actually streams A1 and B1.
 
-Results are in pipeline/local/results
+Results are in pipeline/local/results.
+
+the pipeline/remote codes were run in mesocentre.
