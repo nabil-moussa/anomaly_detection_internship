@@ -1,0 +1,5 @@
+fault_type,start_row,end_row,n_rows
+outer_race_0g,50900,51800,900
+ball_fault_0g,53800,55800,2000
+outer_race_0g,56800,60300,3500
+ball_fault_0g,60300,67300,7000

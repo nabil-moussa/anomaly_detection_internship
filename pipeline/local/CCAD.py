@@ -13,6 +13,8 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 import warnings
 import os
+import time
+
 #df = pd.read_csv(r"C:\Users\user\Downloads\ccad_drift_test (1).csv")
 
 ##df = pd.read_csv("D:\\MaFaulDa\\streams\\stream_A.csv")
@@ -449,6 +451,7 @@ def pca_amplitude_detection(raw_df, cols, all_cycles, template_global_idx_set,
 
 # Per-Group Pipeline
 def run_pipeline_for_group(df, group_cols, group_period, group_id, min_cycles=3):
+    t_cal_start = time.perf_counter()
     print(f"\n{'='*65}")
     print(f"GROUP period={group_period}pts | {len(group_cols)} sensors")
     print(f"Sensors: {group_cols}")
@@ -533,7 +536,13 @@ def run_pipeline_for_group(df, group_cols, group_period, group_id, min_cycles=3)
     for s in train_template_idx_sets.values():
         all_template_indices.update(s)
 
+    t_cal_end = time.perf_counter()
+    t_calibration = t_cal_end - t_cal_start
+    print(f"\n  Calibration time: {t_calibration:.2f}s")
+
     print(f"\n  STEP 7 – Scoring test cycles (full stream)")
+
+    t_inf_start = time.perf_counter()
     corr_full, corr_full_signed = correlation_strength(df_full, group_cols, auto_window)
 
     if seg_method == "NaN boundary" or seg_method == "Consistent NaN gaps":
@@ -581,6 +590,7 @@ def run_pipeline_for_group(df, group_cols, group_period, group_id, min_cycles=3)
     print(f"    Template cycles: {len(all_template_indices)} | "
         f"Test cycles: {len(valid_test)}")
 
+    _score_times = []
     results = []
     for vi in valid_test:
         nc       = all_normalised[vi]
@@ -589,7 +599,11 @@ def run_pipeline_for_group(df, group_cols, group_period, group_id, min_cycles=3)
         tmpl     = cluster_templates[best_cid]
         med_c    = cluster_medians[best_cid]
         thr      = cluster_thresholds[best_cid]
+
+        _t0 = time.perf_counter()
         ws, det, shift = score_single_cycle(nc, tmpl, med_c)
+        _score_times.append(time.perf_counter() - _t0)
+
         min_anom = max(2, int(tmpl['n_windows'] * 0.25))
         above    = np.sum(ws > thr)
         max_s    = np.max(ws)
@@ -603,7 +617,11 @@ def run_pipeline_for_group(df, group_cols, group_period, group_id, min_cycles=3)
                         'window_scores': ws, 'window_details': det,
                         'shift_applied': shift, 'threshold': thr,
                         'alert_tier': alert_tier})
-
+    t_per_cycle_pure_ms = (sum(_score_times) / len(_score_times)) * 1000 \
+                          if _score_times else 0.0
+    print(f"   Pure per-cycle scoring: "
+          f"{t_per_cycle_pure_ms:.2f}ms/cycle "
+          f"({len(_score_times)} test cycles)")
     all_cycles = full_cycles
     corr       = corr_full
 
@@ -646,6 +664,14 @@ def run_pipeline_for_group(df, group_cols, group_period, group_id, min_cycles=3)
     final = corr_anomalies | amp_anom
     both  = corr_anomalies & amp_anom
 
+    t_inf_end = time.perf_counter()
+    t_inference_total = t_inf_end - t_inf_start
+    n_test_cycles = len(valid_test)
+    t_per_cycle = t_inference_total / max(n_test_cycles, 1)
+    
+    print(f"   Inference total : {t_inference_total:.2f}s over {n_test_cycles} test cycles")
+    print(f"   Inference/cycle : {t_per_cycle*1000:.2f}ms")
+
     print(f"\n  ── Summary ──────────────────────────────────────────")
     print(f"    Correlation anomalies : {len(corr_anomalies)}")
     print(f"    Amplitude anomalies   : {len(amp_anom)}")
@@ -664,7 +690,12 @@ def run_pipeline_for_group(df, group_cols, group_period, group_id, min_cycles=3)
             'amp_threshold': amp_thr, 'cycle_amp_scores': amp_scores,
             'final_anomalies': final, 'both_methods': both,
             'cluster_thresholds_low':  cluster_thresholds_low,
-            'cluster_thresholds_high': cluster_thresholds_high}
+            'cluster_thresholds_high': cluster_thresholds_high,
+            't_calibration':     t_calibration,
+            't_inference_total': t_inference_total,
+            't_per_cycle_ms':    t_per_cycle * 1000,
+            't_per_cycle_pure_ms':  t_per_cycle_pure_ms,
+            'n_test_cycles':     n_test_cycles,}
 
 
 # VISUALISATION
@@ -1128,7 +1159,17 @@ if __name__ == "__main__":
     print(f"  Period = {period} samples  (conf={conf:.4f})")
 
     group_outputs = []
+    import tracemalloc
+
+    tracemalloc.start()
+
     out = run_pipeline_for_group(df, sensor_cols, period, group_id=period)
+
+    current, peak = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
+
+    peak_ram_mb = peak / 1024**2
+    print(f"\n   CCAD peak RAM: {peak_ram_mb:.1f} MB")    
     if out is not None:
         group_outputs.append(out)
 

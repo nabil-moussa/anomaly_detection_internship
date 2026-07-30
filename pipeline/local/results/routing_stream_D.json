@@ -1,0 +1,10 @@
+{
+  "stream": "stream_D",
+  "adequacy": 0.4247276399121586,
+  "route": "dl",
+  "stat_weight": 0.0,
+  "dl_weight": 1.0,
+  "stat_thr": 0.9,
+  "hybrid_thr": 0.5,
+  "rationale": "Adequacy 0.425 < 0.5 \u2192 DL only. Signal lacks periodic structure; statistical method unreliable."
+}

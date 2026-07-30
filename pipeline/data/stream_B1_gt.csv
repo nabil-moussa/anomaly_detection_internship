@@ -1,0 +1,3 @@
+fault_type,start_row,end_row,n_rows
+cage_fault_0g,68000,72500,4500
+imbalance_35g,88500,100500,12000

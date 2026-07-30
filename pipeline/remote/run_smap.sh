@@ -54,7 +54,33 @@ python -c "import torch; print('CUDA:', torch.cuda.is_available())"
 #  --gamma 0.5 --epochs 100 --init_lr 0.001 --use_sr_cleaning True \
 #  --n_seeds 1 --seeds 42 #,123,456,789,1234
   
+#python train.py --dataset SMAP --use_vae True --use_gatv2 False \
+#  --gru_hid_dim 300 --fc_hid_dim 300 --recon_hid_dim 64 \
+#  --gamma 0.3 --epochs 100 --init_lr 0.001 --use_sr_cleaning False \
+#  --n_seeds 1 --seeds 42
+   
 python train.py --dataset SMAP --use_vae False --use_gatv2 False \
   --gru_hid_dim 300 --fc_hid_dim 300 --recon_hid_dim 300 \
   --gamma 0.3 --epochs 100 --init_lr 0.001 --use_sr_cleaning True \
   --n_seeds 1 --seeds 42 
+
+#python train.py --dataset SMAP --use_vae True --use_gatv2 False \
+#  --gru_hid_dim 300 --fc_hid_dim 300 --recon_hid_dim 64 \
+#  --gamma 0.3 --epochs 100 --init_lr 0.001 --use_sr_cleaning False \
+#  --use_nll True --use_nll_score True --n_seeds 1 --seeds 42
+
+#### this
+#python train.py --dataset SMAP --use_vae True --use_gatv2 False \
+#  --gru_hid_dim 300 --fc_hid_dim 300 --recon_hid_dim 64 \
+#  --gamma 0.3 --epochs 100 --init_lr 0.001 --use_sr_cleaning False \
+#  --n_seeds 1 --seeds 42
+
+
+#python train.py --dataset SMAP \
+#  --use_vae True --use_gatv2 False \
+#  --use_gru_decoder True \
+#  --use_nll False --use_nll_score False \
+#  --use_maxpool False \
+#  --gru_hid_dim 300 --fc_hid_dim 300 --recon_hid_dim 300 \
+#  --gamma 0.8 --epochs 100 --init_lr 0.001 \
+#  --use_sr_cleaning True --n_seeds 3 --seeds 42,123,456

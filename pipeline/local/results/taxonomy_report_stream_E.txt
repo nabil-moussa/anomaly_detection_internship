@@ -1,0 +1,163 @@
+
+══════════════════════════════════════════════════════════════════════
+  HYBRID ANOMALY TAXONOMY REPORT  —  stream_E
+══════════════════════════════════════════════════════════════════════
+  Route        : hybrid
+  Weights      : stat=0.80  dl=0.20
+  Threshold    : 0.50 (fused normalised score)
+  Total cycles : 328
+  Anomalies    : 12  (3.7%)
+
+  TYPE DISTRIBUTION
+  ──────────────────────────────────────────────────────────────────
+  BOTH         ███████████ 11
+  STAT_ONLY    ██████████████████████████████████████████████████ 67
+  DL_ONLY       0
+  FUSED        ██ 2
+  NORMAL       █████████ 9
+  TEMPLATE     ██████████████████████████████████████████████████ 239
+
+  ANOMALY TYPE GUIDE
+  ──────────────────────────────────────────────────────────────────
+  BOTH       : Both methods flagged — highest confidence.
+               Relational breakdown confirmed by reconstruction error.
+
+  STAT_ONLY  : Only the statistical method flagged.
+               Correlation structure changed; amplitude stayed normal.
+               Candidate for early-stage fault — worth monitoring.
+
+  DL_ONLY    : Only MTAD-GAT flagged.
+               Sensors may drift together (preserving correlations)
+               or temporal pattern changed in a way CCAD missed.
+
+  FUSED      : Neither method alone crossed its threshold.
+               Weighted combination does. Treat as low-confidence.
+
+══════════════════════════════════════════════════════════════════════
+  ANOMALY DETAILS
+══════════════════════════════════════════════════════════════════════
+
+  ────────────────────────────────────────────────────────────────────
+  CYCLE 17    idx 1700→1799  (100 pts)
+  Type   : MARGINAL        — neither method crossed its own threshold alone;
+                  weighted combination does. Use with caution.
+  Scores : stat_norm=1.000  dl_norm=n/a  fused=1.000
+
+  Statistical: not flagged.
+  DL: not flagged.
+
+  ────────────────────────────────────────────────────────────────────
+  CYCLE 324   idx 32400→32499  (100 pts)
+  Type   : HIGH CONFIDENCE — relational breakdown AND amplitude deviation.
+  Scores : stat_norm=1.000  dl_norm=1.000  fused=1.000
+
+  Statistical: max_score=5.05σ  (1/10 windows > threshold=4.41)
+    Worst window : W6  score=5.05σ
+    -> Localised disruption in one time segment.
+  DL: cycle_score=31.5914  peak_timestep=32474  peak_value=31.5914
+    -> Elevated reconstruction error: sustained pattern deviation.
+
+  ────────────────────────────────────────────────────────────────────
+  CYCLE 323   idx 32300→32399  (100 pts)
+  Type   : HIGH CONFIDENCE — relational breakdown AND amplitude deviation.
+  Scores : stat_norm=0.996  dl_norm=0.976  fused=0.992
+
+  Statistical: max_score=4.91σ  (1/10 windows > threshold=4.41)
+    Worst window : W6  score=4.91σ
+    -> Localised disruption in one time segment.
+  DL: cycle_score=29.1785  peak_timestep=32346  peak_value=29.1785
+    -> Elevated reconstruction error: sustained pattern deviation.
+
+  ────────────────────────────────────────────────────────────────────
+  CYCLE 318   idx 31800→31899  (100 pts)
+  Type   : HIGH CONFIDENCE — relational breakdown AND amplitude deviation.
+  Scores : stat_norm=1.000  dl_norm=0.833  fused=0.966
+
+  Statistical: max_score=5.29σ  (1/10 windows > threshold=4.41)
+    Worst window : W6  score=5.29σ
+    -> Localised disruption in one time segment.
+  DL: cycle_score=24.9013  peak_timestep=31850  peak_value=24.9013
+    -> Elevated reconstruction error: sustained pattern deviation.
+
+  ────────────────────────────────────────────────────────────────────
+  CYCLE 310   idx 31000→31099  (100 pts)
+  Type   : EARLY WARNING   — inter-sensor correlation broke down; DL did not fire.
+                  May indicate subtle or incipient fault.
+  Scores : stat_norm=0.973  dl_norm=0.544  fused=0.887
+
+  Statistical: max_score=4.84σ  (1/10 windows > threshold=4.41)
+    Worst window : W6  score=4.84σ
+    -> Localised disruption in one time segment.
+  DL: not flagged.
+
+  ────────────────────────────────────────────────────────────────────
+  CYCLE 281   idx 28100→28199  (100 pts)
+  Type   : EARLY WARNING   — inter-sensor correlation broke down; DL did not fire.
+                  May indicate subtle or incipient fault.
+  Scores : stat_norm=1.000  dl_norm=0.123  fused=0.824
+
+  Statistical: max_score=7.83σ  (2/10 windows > threshold=3.26)
+    Worst window : W4  score=7.83σ
+    -> Partial correlation breakdown across several segments.
+  DL: not flagged.
+
+  ────────────────────────────────────────────────────────────────────
+  CYCLE 306   idx 30600→30699  (100 pts)
+  Type   : EARLY WARNING   — inter-sensor correlation broke down; DL did not fire.
+                  May indicate subtle or incipient fault.
+  Scores : stat_norm=0.762  dl_norm=0.455  fused=0.700
+
+  Statistical: max_score=4.21σ  (0/10 windows > threshold=4.41)
+    -> Partial correlation breakdown across several segments.
+  DL: not flagged.
+
+  ────────────────────────────────────────────────────────────────────
+  CYCLE 325   idx 32500→32599  (100 pts)
+  Type   : HIGH CONFIDENCE — relational breakdown AND amplitude deviation.
+  Scores : stat_norm=0.617  dl_norm=1.000  fused=0.694
+
+  Statistical: max_score=3.78σ  (0/10 windows > threshold=4.41)
+    -> Partial correlation breakdown across several segments.
+  DL: cycle_score=30.9671  peak_timestep=32554  peak_value=30.9671
+    -> Elevated reconstruction error: sustained pattern deviation.
+
+  ────────────────────────────────────────────────────────────────────
+  CYCLE 316   idx 31600→31699  (100 pts)
+  Type   : EARLY WARNING   — inter-sensor correlation broke down; DL did not fire.
+                  May indicate subtle or incipient fault.
+  Scores : stat_norm=0.601  dl_norm=0.724  fused=0.626
+
+  Statistical: max_score=3.73σ  (0/10 windows > threshold=4.41)
+    -> Partial correlation breakdown across several segments.
+  DL: not flagged.
+
+  ────────────────────────────────────────────────────────────────────
+  CYCLE 82    idx 8200→8299  (100 pts)
+  Type   : MARGINAL        — neither method crossed its own threshold alone;
+                  weighted combination does. Use with caution.
+  Scores : stat_norm=0.590  dl_norm=n/a  fused=0.590
+
+  Statistical: not flagged.
+  DL: not flagged.
+
+  ────────────────────────────────────────────────────────────────────
+  CYCLE 328   idx 32800→32899  (100 pts)
+  Type   : HIGH CONFIDENCE — relational breakdown AND amplitude deviation.
+  Scores : stat_norm=0.481  dl_norm=1.000  fused=0.585
+
+  Statistical: max_score=3.37σ  (0/10 windows > threshold=4.41)
+    -> Partial correlation breakdown across several segments.
+  DL: cycle_score=35.8824  peak_timestep=32878  peak_value=35.8824
+    -> Elevated reconstruction error: sustained pattern deviation.
+
+  ────────────────────────────────────────────────────────────────────
+  CYCLE 319   idx 31900→31999  (100 pts)
+  Type   : HIGH CONFIDENCE — relational breakdown AND amplitude deviation.
+  Scores : stat_norm=0.446  dl_norm=0.798  fused=0.517
+
+  Statistical: max_score=3.27σ  (0/10 windows > threshold=4.41)
+    -> Partial correlation breakdown across several segments.
+  DL: cycle_score=23.8829  peak_timestep=31982  peak_value=23.8829
+    -> Elevated reconstruction error: sustained pattern deviation.
+
+══════════════════════════════════════════════════════════════════════

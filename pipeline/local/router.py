@@ -5,8 +5,8 @@ from dataclasses import dataclass, asdict
 from pathlib import Path
 
 
-STAT_THR   = 0.7
-HYBRID_THR = 0.50
+STAT_THR   = 0.65
+HYBRID_THR = 0.45
 
 
 @dataclass

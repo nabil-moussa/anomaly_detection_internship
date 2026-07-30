@@ -173,25 +173,38 @@ def _scp_down(cfg: dict, remote: str, local: str) -> bool:
 
 def prepare_and_upload_data(df: pd.DataFrame, sensor_cols: list,
                              cfg: dict, local_tmp: str,
-                             train_frac: float = 0.75) -> bool:
+                             train_frac: float = 0.75,
+                             gt_csv: str = None) -> bool:
     import pickle
     print("\n  [DATA] Preparing pkl files for MTAD-GAT...")
     Path(local_tmp).mkdir(parents=True, exist_ok=True)
 
     data  = df[sensor_cols].values.astype("float32")
-    split = int(len(data) * train_frac)
+    split = int(len(data) * train_frac)  # 75%
     x_tr  = data[:split]
-    lookback = 100
     x_te  = data[split:]
-    y_te  = np.zeros(max(0, len(x_te) - lookback), dtype="float32")
+    lookback = 100
+
+    if gt_csv is not None and Path(gt_csv).exists():
+        gt_df  = pd.read_csv(gt_csv)
+        labels = np.zeros(len(data), dtype="float32")
+        for _, row in gt_df.iterrows():
+            labels[int(row['start_row']):int(row['end_row'])] = 1.0
+        y_te = labels[split:][lookback:]
+        print(f"    Labels: {int(labels.sum())} anomalous "
+            f"| {int(y_te.sum())} in test set "
+            f"(split at 75% = sample {split})")
+    else:
+        y_te = np.zeros(max(0, len(x_te) - lookback), dtype="float32")
+        print("    WARNING: no ground truth — labels set to zero")
 
     for obj, name in [(x_tr, "CUSTOM_train.pkl"),
-                       (x_te, "CUSTOM_test.pkl"),
-                       (y_te, "CUSTOM_test_label.pkl")]:
+                    (x_te, "CUSTOM_test.pkl"),
+                    (y_te, "CUSTOM_test_label.pkl")]:
         with open(Path(local_tmp) / name, "wb") as f:
             pickle.dump(obj, f)
 
-    print(f"    train={x_tr.shape}  test={x_te.shape}")
+    print(f"    train={x_tr.shape}  test={x_te.shape}  labels={y_te.shape}")
 
     remote_custom = f"{cfg['remote_dir']}/datasets/custom"
     _ssh(cfg, f"mkdir -p {remote_custom}")
@@ -336,7 +349,9 @@ def run_adequacy(df, sensor_cols, train_frac=0.75, min_corr=0.15):
 
     group_results = [
         adeq.assess_group(df, [valid_cols[i] for i in idx],
-                           train_end, rough_window, period_hint=global_period)
+                        train_end, rough_window, 
+                        period_hint=global_period,
+                        n_total_sensors=len(sensor_cols))
         for idx in group_indices
     ]
     if not group_results:
@@ -366,9 +381,10 @@ def _resolve_dl_threshold(dl_data: dict) -> float | None:
     raw_thr = dl_data.get("dl_threshold")
     if raw_thr is None:
         return None
-    floor = float(np.percentile(dl_data["test_scores"], 95))
+    floor    = float(np.percentile(dl_data["train_scores"], 95))
     resolved = float(max(raw_thr, floor))
-    print(f"  dl_threshold: raw={raw_thr:.6f}  p95_floor={floor:.6f}  using={resolved:.6f}")
+    print(f"  dl_threshold: raw={raw_thr:.6f}  "
+          f"p95_train_floor={floor:.6f}  using={resolved:.6f}")
     return resolved
 
 def slice_scores_to_train(scores, all_cycles, train_end):
@@ -378,6 +394,8 @@ def slice_scores_to_train(scores, all_cycles, train_end):
     return arr[train_mask] if len(train_mask) else arr
 
 def main():
+    import psutil, os
+    _proc = psutil.Process(os.getpid())
     parser = argparse.ArgumentParser(description="Hybrid anomaly detection pipeline")
     parser.add_argument("--setup",         action="store_true",
                         help="Interactive mesocentre SSH setup")
@@ -499,10 +517,15 @@ def main():
             print(f"\n{'─'*65}")
             print("  MESOCENTRE  —  submitting MTAD-GAT job")
             print(f"{'─'*65}")
-
+            
+            _gt_csv = Path(args.csv).parent / f"{args.stream}_gt.csv"
+            if not _gt_csv.exists():
+                # fallback: look in same folder as csv with stream name
+                _gt_csv = Path(f"D:\\MaFaulDa\\streams\\{args.stream}_gt.csv")
+            print(f"  [GT] Using ground truth: {_gt_csv}")
             if not prepare_and_upload_data(df, sensor_cols, cfg,
-                                            args.handoff_dir, args.train_frac):
-                print("  Data upload failed. Check SSH config (--setup).")
+                                            args.handoff_dir, args.train_frac,
+                                            gt_csv=str(_gt_csv)):
                 sys.exit(1)
 
             job_id = submit_job(cfg, args.stream, args.handoff_dir)
@@ -556,9 +579,23 @@ def main():
 
     n_total = len(df)
     if dl_data is not None:
-        dl_full = np.full(n_total, np.nan)
-        ts = dl_data["test_scores"]
-        dl_full[n_total - len(ts):] = ts
+        dl_full   = np.full(n_total, np.nan)
+        tr_scores = np.asarray(dl_data["train_scores"])
+        ts_scores = np.asarray(dl_data["test_scores"])
+
+        split       = int(n_total * args.train_frac)
+        window_size = split - len(tr_scores)   # recovers lookback used at train time
+
+        if window_size < 0 or window_size > split:
+            print(f"  WARNING: could not recover a sane window_size "
+                  f"({window_size}); DL train scores will not be placed.")
+        else:
+            dl_full[window_size:split] = tr_scores
+            dl_full[split + window_size: split + window_size + len(ts_scores)] = ts_scores
+            print(f"  DL coverage: window_size={window_size}  "
+                  f"train_scores placed [{window_size}:{split}]  "
+                  f"test_scores placed [{split+window_size}:{split+window_size+len(ts_scores)}]")
+
         dl_threshold = _resolve_dl_threshold(dl_data)
     else:
         dl_full = np.zeros(n_total)
@@ -566,18 +603,33 @@ def main():
 
     stat_flagged    = stat_out["final_anomalies"]      if stat_out else set()
     template_cycles = stat_out["all_template_indices"] if stat_out else set()
-    dl_flagged      = (dl_flagged_from_scores(dl_full, all_cycles, dl_threshold)
-                       if dl_threshold is not None and all_cycles else set())
+    test_start_idx  = split + window_size
+    dl_flagged      = (
+        {i for i in dl_flagged_from_scores(dl_full, all_cycles, dl_threshold)
+         if all_cycles[i][0] >= test_start_idx}
+        if dl_threshold is not None and all_cycles else set()
+    )
 
     fuser = HybridFuser(stat_weight=decision.stat_weight, threshold=args.fuse_thr)
     if stat_out:
         train_end    = stat_out["train_end"]
         tr_idx       = [i for i, (s, e, _) in enumerate(all_cycles) if e <= train_end]
         stat_train   = stat_scores[tr_idx] if tr_idx else stat_scores
-        dl_train   = slice_scores_to_train(dl_full, all_cycles, train_end)
-        dl_for_fit = dl_train[~np.isnan(dl_train)]
-        dl_for_fit = dl_for_fit if len(dl_for_fit) else np.zeros(1)
-        fuser.fit(stat_train, dl_for_fit)
+        dl_cycle_all = HybridFuser._dl_to_cycle_scores(dl_full, all_cycles)
+        dl_train     = dl_cycle_all[tr_idx] if tr_idx else dl_cycle_all
+        dl_for_fit   = dl_train[~np.isnan(dl_train)]
+        dl_for_fit   = dl_for_fit if len(dl_for_fit) else np.zeros(1)
+
+        dl_test_cycle = np.array([
+            dl_full[max(0, s):min(e+1, len(dl_full))][
+                ~np.isnan(dl_full[max(0, s):min(e+1, len(dl_full))])
+            ].max() if not np.all(np.isnan(dl_full[max(0, s):min(e+1, len(dl_full))])) else np.nan
+            for s, e, _ in all_cycles
+        ])
+        dl_test_valid = dl_test_cycle[~np.isnan(dl_test_cycle)]
+        dl_test_for_fit = dl_test_valid if len(dl_test_valid) else None
+
+        fuser.fit(stat_train, dl_for_fit, dl_test_scores=dl_test_for_fit)
 
     fusion_report = fuser.fuse(
         stat_scores=stat_scores, dl_ts_scores=dl_full, cycles=all_cycles,
@@ -586,7 +638,8 @@ def main():
 
     from hybrid_fuser import print_fusion_summary
     print_fusion_summary(fusion_report)
-
+    ram_mb = _proc.memory_info().rss / 1024**2
+    print(f"\n   Pipeline peak RAM: {ram_mb:.0f} MB")
     # Reports
     print(f"\n{'─'*65}")
     print("  GENERATING REPORTS")

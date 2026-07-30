@@ -14,7 +14,7 @@ module load anaconda3@2022.10/gcc-12.1.0
 source activate mtad
 
 export MPLCONFIGDIR=$WORK/matplotlib_cache
-export LD_PRELOAD=/Home/Users/nmoussa/.conda/envs/mtad/lib/libstdc++.so.6
+export LD_PRELOAD=/Home/Users/nmoussa/.conda/envs/mtad/lib/libstdc++.so.6  
 mkdir -p $MPLCONFIGDIR
 
 cd /Work/Users/nmoussa/mtad-gat-pytorch
@@ -29,7 +29,7 @@ python -c "import torch; print('CUDA:', torch.cuda.is_available())"
 #    --bs 256 \
 #    --init_lr 1e-3 \
 #    --lookback 100 \
-#    --use_cuda True \
+#    --use_cuda True \ 
 #    --val_split 0.1 \
 #    --print_every 1 \
 #    --log_tensorboard False
@@ -38,3 +38,25 @@ python train.py --dataset msl --use_vae True --use_gatv2 False --level 0.98 --q 
   --gru_hid_dim 300 --fc_hid_dim 300 --recon_hid_dim 300 \
   --gamma 0.8 --epochs 100 --init_lr 0.001 --use_sr_cleaning True\
   --n_seeds 1 --seeds 42 #,123,456,789,1234
+
+#python train.py --dataset MSL --use_vae True --use_gatv2 False \
+#  --gru_hid_dim 300 --fc_hid_dim 300 --recon_hid_dim 300 \
+#  --gamma 0.8 --epochs 100 --init_lr 0.001 --use_sr_cleaning True \
+#  --use_nll False --use_nll_score False --n_seeds 1 --seeds 42
+
+#### this
+#python train.py --dataset MSL --use_vae True --use_gatv2 True --level 0.98 --q 0.001\
+#  --gru_hid_dim 300 --fc_hid_dim 300 --recon_hid_dim 300 \
+#  --gamma 0.8 --epochs 100 --init_lr 0.001 --use_sr_cleaning True \
+#  --use_gru_decoder False --use_nll False --use_nll_score False --use_maxpool False \
+#  --n_seeds 1 --seeds 42
+
+#python train.py --dataset MSL \
+#  --use_vae True --use_gatv2 False \
+#  --use_gru_decoder True \
+#  --use_nll False --use_nll_score False \
+#  --use_maxpool False \
+#  --gru_hid_dim 300 --fc_hid_dim 300 --recon_hid_dim 300 \
+#  --gamma 0.8 --epochs 100 --init_lr 0.001 \
+#  --use_sr_cleaning True --n_seeds 3 --seeds 42,123,456
+  

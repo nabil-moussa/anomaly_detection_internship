@@ -1,0 +1,90 @@
+{
+  "cols": [
+    "underhang_axial",
+    "underhang_radial",
+    "underhang_tangential"
+  ],
+  "mean_corr": 0.4002266207600459,
+  "period": 3854,
+  "period_conf": 0.48893097113015627,
+  "period_method": "autocorr (higher conf)",
+  "drift_cv": 0.3036058236642119,
+  "drift_pairs": [
+    [
+      9244,
+      3856
+    ],
+    [
+      18488,
+      3854
+    ],
+    [
+      27732,
+      3861
+    ],
+    [
+      36976,
+      3854
+    ],
+    [
+      46220,
+      3838
+    ],
+    [
+      55464,
+      3854
+    ],
+    [
+      64708,
+      3854
+    ],
+    [
+      73952,
+      3849
+    ],
+    [
+      83196,
+      312
+    ],
+    [
+      87818,
+      3847
+    ]
+  ],
+  "drift_status": "ok",
+  "purity_frac": 0.02813852813852814,
+  "seg_quality": 6.671108210840254,
+  "n_sensors_pass": 3,
+  "n_sensors_total": 3,
+  "sensor_quality": {
+    "underhang_axial": {
+      "missing_frac": 0.0,
+      "std": 1.0201497727180886,
+      "passed": true,
+      "reason": "ok"
+    },
+    "underhang_radial": {
+      "missing_frac": 0.0,
+      "std": 0.37840778638447947,
+      "passed": true,
+      "reason": "ok"
+    },
+    "underhang_tangential": {
+      "missing_frac": 0.0,
+      "std": 0.1289207798046865,
+      "passed": true,
+      "reason": "ok"
+    }
+  },
+  "n_sensors_total_dataset": 3,
+  "scores": {
+    "correlation_strength": 0.7782813794667687,
+    "periodicity": 0.6111637139126953,
+    "period_stability": 0.13255478953082311,
+    "training_purity": 0.8874458874458875,
+    "shape_consistency": 0.16611147364496825,
+    "sensor_completeness": 1.0
+  },
+  "overall": 0.5771254103725748,
+  "label": "~ MARGINAL"
+}

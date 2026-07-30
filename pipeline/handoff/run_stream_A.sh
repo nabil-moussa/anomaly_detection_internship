@@ -1,0 +1,47 @@
+#!/bin/bash
+#SBATCH --job-name=mtad_stream_A
+#SBATCH --output=/Work/Users/nmoussa/mtad-gat-pytorch/logs/mtad_stream_A_%j.out
+#SBATCH --error=/Work/Users/nmoussa/mtad-gat-pytorch/logs/mtad_stream_A_%j.err
+#SBATCH --time=04:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --gres=gpu:1
+#SBATCH --mem=16G
+#SBATCH --partition=gpu
+
+module load anaconda3@2022.10/gcc-12.1.0
+source activate mtad
+export MPLCONFIGDIR=$WORK/matplotlib_cache
+export LD_PRELOAD=/Home/Users/nmoussa/.conda/envs/mtad/lib/libstdc++.so.6
+mkdir -p $MPLCONFIGDIR
+mkdir -p /Work/Users/nmoussa/handoff
+mkdir -p /Work/Users/nmoussa/mtad-gat-pytorch/logs
+
+cd /Work/Users/nmoussa/mtad-gat-pytorch
+
+python -c "import torch; print('CUDA:', torch.cuda.is_available())"
+
+python train.py \
+  --dataset CUSTOM \
+  --epochs 50 \
+  --lookback 100 \
+  --normalize False \
+  --use_vae False \
+  --use_gatv2 False \
+  --gru_hid_dim 300 \
+  --fc_hid_dim 300 \
+  --recon_hid_dim 300 \
+  --gamma 0.8 \
+  --init_lr 0.001 \
+  --bs 256 \
+  --use_cuda True \
+  --use_sr_cleaning False \
+  --n_seeds 1 \
+  --seeds 42
+
+# Export anomaly scores for hybrid pipeline fusion
+python export_scores.py \
+  --save_path output/CUSTOM/$(ls -t output/CUSTOM | head -1) \
+  --stream_name stream_A \
+  --handoff_dir /Work/Users/nmoussa/handoff

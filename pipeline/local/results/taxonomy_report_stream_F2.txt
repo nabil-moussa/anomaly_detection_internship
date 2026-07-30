@@ -1,0 +1,117 @@
+
+══════════════════════════════════════════════════════════════════════
+  HYBRID ANOMALY TAXONOMY REPORT  —  stream_F2
+══════════════════════════════════════════════════════════════════════
+  Route        : hybrid
+  Weights      : stat=0.73  dl=0.27
+  Threshold    : 0.50 (fused normalised score)
+  Total cycles : 32
+  Anomalies    : 7  (21.9%)
+
+  TYPE DISTRIBUTION
+  ──────────────────────────────────────────────────────────────────
+  BOTH         ████ 4
+  STAT_ONLY    ████ 4
+  DL_ONLY       0
+  FUSED         0
+  NORMAL       █ 1
+  TEMPLATE     ███████████████████████ 23
+
+  ANOMALY TYPE GUIDE
+  ──────────────────────────────────────────────────────────────────
+  BOTH       : Both methods flagged — highest confidence.
+               Relational breakdown confirmed by reconstruction error.
+
+  STAT_ONLY  : Only the statistical method flagged.
+               Correlation structure changed; amplitude stayed normal.
+               Candidate for early-stage fault — worth monitoring.
+
+  DL_ONLY    : Only MTAD-GAT flagged.
+               Sensors may drift together (preserving correlations)
+               or temporal pattern changed in a way CCAD missed.
+
+  FUSED      : Neither method alone crossed its threshold.
+               Weighted combination does. Treat as low-confidence.
+
+══════════════════════════════════════════════════════════════════════
+  ANOMALY DETAILS
+══════════════════════════════════════════════════════════════════════
+
+  ────────────────────────────────────────────────────────────────────
+  CYCLE 26    idx 50154→52082  (1929 pts)
+  Type   : HIGH CONFIDENCE — relational breakdown AND amplitude deviation.
+  Scores : stat_norm=1.000  dl_norm=1.000  fused=1.000
+
+  Statistical: max_score=7.63σ  (5/10 windows > threshold=3.20)
+    Worst window : W6  score=7.63σ
+    -> Partial correlation breakdown across several segments.
+  DL: cycle_score=42.9253  peak_timestep=52039  peak_value=42.9253
+    -> Elevated reconstruction error: sustained pattern deviation.
+
+  ────────────────────────────────────────────────────────────────────
+  CYCLE 31    idx 59799→61727  (1929 pts)
+  Type   : HIGH CONFIDENCE — relational breakdown AND amplitude deviation.
+  Scores : stat_norm=1.000  dl_norm=0.947  fused=0.986
+
+  Statistical: max_score=7.83σ  (8/10 windows > threshold=3.20)
+    Worst window : W1  score=7.83σ
+    -> Partial correlation breakdown across several segments.
+  DL: cycle_score=38.1552  peak_timestep=61239  peak_value=38.1552
+    -> Elevated reconstruction error: sustained pattern deviation.
+
+  ────────────────────────────────────────────────────────────────────
+  CYCLE 30    idx 57870→59798  (1929 pts)
+  Type   : HIGH CONFIDENCE — relational breakdown AND amplitude deviation.
+  Scores : stat_norm=1.000  dl_norm=0.884  fused=0.969
+
+  Statistical: max_score=8.92σ  (9/10 windows > threshold=3.20)
+    Worst window : W9  score=8.92σ
+    -> Partial correlation breakdown across several segments.
+  DL: cycle_score=35.6527  peak_timestep=59446  peak_value=35.6527
+    -> Elevated reconstruction error: sustained pattern deviation.
+
+  ────────────────────────────────────────────────────────────────────
+  CYCLE 32    idx 61728→63656  (1929 pts)
+  Type   : HIGH CONFIDENCE — relational breakdown AND amplitude deviation.
+  Scores : stat_norm=1.000  dl_norm=0.881  fused=0.968
+
+  Statistical: max_score=6.47σ  (10/10 windows > threshold=3.20)
+    Worst window : W2  score=6.47σ
+    -> Partial correlation breakdown across several segments.
+  DL: cycle_score=35.5307  peak_timestep=62233  peak_value=35.5307
+    -> Elevated reconstruction error: sustained pattern deviation.
+
+  ────────────────────────────────────────────────────────────────────
+  CYCLE 27    idx 52083→54011  (1929 pts)
+  Type   : EARLY WARNING   — inter-sensor correlation broke down; DL did not fire.
+                  May indicate subtle or incipient fault.
+  Scores : stat_norm=1.000  dl_norm=0.232  fused=0.793
+
+  Statistical: max_score=4.07σ  (6/10 windows > threshold=2.64)
+    Worst window : W9  score=4.07σ
+    -> Partial correlation breakdown across several segments.
+  DL: not flagged.
+
+  ────────────────────────────────────────────────────────────────────
+  CYCLE 29    idx 55941→57869  (1929 pts)
+  Type   : EARLY WARNING   — inter-sensor correlation broke down; DL did not fire.
+                  May indicate subtle or incipient fault.
+  Scores : stat_norm=1.000  dl_norm=0.005  fused=0.732
+
+  Statistical: max_score=5.10σ  (9/10 windows > threshold=2.64)
+    Worst window : W0  score=5.10σ
+    -> Partial correlation breakdown across several segments.
+  DL: not flagged.
+
+  ────────────────────────────────────────────────────────────────────
+  CYCLE 28    idx 54012→55940  (1929 pts)
+  Type   : EARLY WARNING   — inter-sensor correlation broke down; DL did not fire.
+                  May indicate subtle or incipient fault.
+  Scores : stat_norm=1.000  dl_norm=0.004  fused=0.732
+
+  Statistical: max_score=4.29σ  (6/10 windows > threshold=2.64)
+    Worst window : W7  score=4.29σ
+    -> Partial correlation breakdown across several segments.
+  DL: not flagged.
+
+══════════════════════════════════════════════════════════════════════

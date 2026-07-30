@@ -1,0 +1,10 @@
+{
+  "stream": "stream_B",
+  "adequacy": 0.5859746994169533,
+  "route": "hybrid",
+  "stat_weight": 0.6798734970847666,
+  "dl_weight": 0.32012650291523337,
+  "stat_thr": 0.65,
+  "hybrid_thr": 0.45,
+  "rationale": "Adequacy 0.586 in [0.45, 0.65) \u2192 hybrid path. stat_weight=0.680, dl_weight=0.320."
+}

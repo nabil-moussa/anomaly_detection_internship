@@ -193,10 +193,13 @@ def visualise_taxonomy(fusion_report: FusionReport,
         y0, y1 = 0.0, 1.0
 
     yspan = max(y1 - y0, 1e-3)
-    ax.set_ylim(y0 - 0.05*yspan, y1 + 0.20*yspan)
+    ax.set_ylim(y0 - 0.05*yspan, y1 + 0.45*yspan)
 
     for c in fusion_report.cycles:
-        col_border, col_fill = _TYPE_COLORS.get(c.detection_type, ("#6B7280", "#F3F4F6"))
+        det_type = c.detection_type if c.is_anomaly else (
+            "TEMPLATE" if c.detection_type == "TEMPLATE" else "NORMAL"
+        )
+        col_border, col_fill = _TYPE_COLORS.get(det_type, ("#6B7280", "#F3F4F6"))
         rect = mpatches.Rectangle(
             (c.start, y0), c.end - c.start, yspan,
             facecolor=col_fill, edgecolor=col_border,
@@ -208,31 +211,30 @@ def visualise_taxonomy(fusion_report: FusionReport,
             ax.text(c.start + (c.end - c.start) * 0.05,
                     y1 + 0.01*yspan,
                     f"{c.detection_type}\nC{c.cycle_idx+1}\n{c.fused_score:.2f}",
-                    fontsize=6, va="bottom", ha="left",
+                    fontsize=12, va="bottom", ha="left",
                     color=col_border, clip_on=True)
 
+    present_types = {c.detection_type for c in fusion_report.cycles 
+                 if c.is_anomaly} | {"NORMAL", "TEMPLATE"}
     handles = [
         mpatches.Patch(facecolor=_TYPE_COLORS[t][1],
                        edgecolor=_TYPE_COLORS[t][0], label=t)
         for t in ["BOTH", "STAT_ONLY", "DL_ONLY", "FUSED", "NORMAL", "TEMPLATE"]
+        if t in present_types
     ]
-    ax.legend(handles=handles, loc="upper right", ncol=6,
-              fontsize=8, framealpha=0.9)
+    ax.legend(handles=handles, loc="upper right",
+              ncol=len(handles), fontsize=12, framealpha=0.9)
     ax.set_xlabel("Sample index", fontsize=10)
     ax.set_ylabel("Correlation strength", fontsize=10)
-    ax.set_title(
-        f"Hybrid anomaly taxonomy — {stream_name}\n"
-        f"stat_w={fusion_report.stat_weight:.2f}  "
-        f"dl_w={fusion_report.dl_weight:.2f}  "
-        f"{fusion_report.n_anomalies} anomalies / {fusion_report.n_cycles} cycles",
-        fontsize=11, fontweight="bold",
-    )
+
     ax.grid(axis="y", alpha=0.3)
     plt.tight_layout()
 
     p = Path(results_dir) / "plots" / f"taxonomy_{stream_name}.png"
+    p_pdf = Path(results_dir) / "plots" / f"taxonomy_{stream_name}.pdf"
     p.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(p, dpi=130, bbox_inches="tight")
+    fig.savefig(p,     dpi=300, bbox_inches="tight")
+    fig.savefig(p_pdf, bbox_inches="tight")
     plt.close(fig)
     print(f"  [VIZ] Taxonomy figure saved -> {p}")
     return str(p)

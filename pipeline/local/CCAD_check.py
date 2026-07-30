@@ -314,14 +314,14 @@ def score_sensor_completeness(n_passed, n_total):
     return float(n_passed / n_total)
 
 
-def overall_score(scores_dict):
+def overall_score(scores_dict, n_group=None, n_total=None):
     weights = {
-        'correlation_strength': 0.35,
-        'periodicity':          0.15,
+        'correlation_strength': 0.30,
+        'periodicity':          0.25,
         'period_stability':     0.10,
         'training_purity':      0.05,
-        'shape_consistency':    0.30,
-        'sensor_completeness':  0.05,
+        'shape_consistency':    0.20,
+        'sensor_completeness':  0.10,
     }
     total = 0.0
     for k, w in weights.items():
@@ -332,6 +332,12 @@ def overall_score(scores_dict):
         total = min(total, 0.55)
     if scores_dict.get('shape_consistency', 0.0) < 0.55:
         total = min(total, 0.60)
+
+    # Group size gate
+    if n_group is not None and n_total is not None and n_total > 0:
+        proportion = n_group / n_total
+        if proportion < 0.30:
+            total = min(total, 0.40)
 
     return float(total)
 
@@ -345,7 +351,7 @@ def adequacy_label(score):
 
 
 # GROUP ASSESSMENT
-def assess_group(df, cols, train_end, window, period_hint=None):
+def assess_group(df, cols, train_end, window, period_hint=None, n_total_sensors=None):
     df_tr = df.iloc[:train_end]
 
     # Correlation signal
@@ -387,7 +393,8 @@ def assess_group(df, cols, train_end, window, period_hint=None):
         'shape_consistency':    s_shape,
         'sensor_completeness':  s_sens,
     }
-    ov = overall_score(scores)
+    #ov = overall_score(scores)
+    ov = overall_score(scores, n_group=len(cols), n_total=n_total_sensors)
 
     return {
         'cols':            cols,
@@ -403,6 +410,7 @@ def assess_group(df, cols, train_end, window, period_hint=None):
         'n_sensors_pass':  n_pass,
         'n_sensors_total': len(cols),
         'sensor_quality':  sq,
+        'n_sensors_total_dataset': n_total_sensors,
         'scores':          scores,
         'overall':         ov,
         'label':           adequacy_label(ov),
@@ -494,6 +502,16 @@ def format_group_report(g, idx):
         reasons.append('cycle shapes are highly inconsistent')
     if reasons:
         lines.append(f'  Issues: {"; ".join(reasons)}')
+
+    n_group = len(g['cols'])
+    n_total = g.get('n_sensors_total_dataset', None)
+    if n_total and n_group / n_total < 0.30:
+        lines.append(
+            f'  Group size gate fired '
+            f'({n_group}/{n_total} = '
+            f'{n_group/n_total:.0%} < 30% of dataset sensors) '
+            f'— score capped at 0.40'
+        )
 
     return '\n'.join(lines)
 
@@ -710,8 +728,10 @@ def main():
     for gi, indices in enumerate(group_indices, 1):
         cols = [valid_cols[i] for i in indices]
         print(f'  Group {gi}: {cols}')
-        result = assess_group(df, cols, train_end, rough_window,
-                               period_hint=global_period)
+        result = assess_group(df, [valid_cols[i] for i in indices],
+                      train_end, rough_window,
+                      period_hint=global_period,
+                      n_total_sensors=len(sensor_cols))
         group_results.append(result)
         print(f'    Score: {result["overall"]:.2f}  {result["label"]}')
 

@@ -1,0 +1,82 @@
+{
+  "cols": [
+    "vib_x",
+    "vib_y"
+  ],
+  "mean_corr": 0.9693471748498637,
+  "period": 100,
+  "period_conf": 0.8670509559372273,
+  "period_method": "autocorr (higher conf)",
+  "drift_cv": 0.27272727272479336,
+  "drift_pairs": [
+    [
+      2470,
+      100
+    ],
+    [
+      4940,
+      200
+    ],
+    [
+      7410,
+      100
+    ],
+    [
+      9880,
+      100
+    ],
+    [
+      12350,
+      100
+    ],
+    [
+      14820,
+      100
+    ],
+    [
+      17290,
+      100
+    ],
+    [
+      19760,
+      100
+    ],
+    [
+      22230,
+      100
+    ],
+    [
+      23465,
+      100
+    ]
+  ],
+  "drift_status": "ok",
+  "purity_frac": 0.048582995951417005,
+  "seg_quality": 0.40326973912492653,
+  "n_sensors_pass": 2,
+  "n_sensors_total": 2,
+  "sensor_quality": {
+    "vib_x": {
+      "missing_frac": 0.0,
+      "std": 0.7419601960359534,
+      "passed": true,
+      "reason": "ok"
+    },
+    "vib_y": {
+      "missing_frac": 0.0,
+      "std": 0.6684830940437518,
+      "passed": true,
+      "reason": "ok"
+    }
+  },
+  "scores": {
+    "correlation_strength": 1.0,
+    "periodicity": 1.0,
+    "period_stability": 0.22077922078630463,
+    "training_purity": 0.8056680161943319,
+    "shape_consistency": 0.9495912826093842,
+    "sensor_completeness": 1.0
+  },
+  "overall": 0.8196817740376326,
+  "label": "\u2713 SUITABLE"
+}

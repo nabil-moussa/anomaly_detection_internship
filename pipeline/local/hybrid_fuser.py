@@ -88,9 +88,15 @@ class HybridFuser:
         self._dl_norm    = RobustNormaliser()
         self._fitted     = False
 
-    def fit(self,stat_train_scores: np.ndarray, dl_train_scores:   np.ndarray) -> "HybridFuser":
+    def fit(self, stat_train_scores: np.ndarray, dl_train_scores: np.ndarray,
+            dl_test_scores: np.ndarray | None = None) -> "HybridFuser":
         self._stat_norm.fit(stat_train_scores)
-        self._dl_norm.fit(dl_train_scores)
+        if dl_test_scores is not None and len(dl_test_scores):
+            # lo from train (normal baseline), hi from test (preserves anomaly gradient)
+            combined = np.concatenate([dl_train_scores, dl_test_scores])
+            self._dl_norm.fit(combined)
+        else:
+            self._dl_norm.fit(dl_train_scores)
         self._fitted = True
         return self
 
@@ -152,9 +158,11 @@ class HybridFuser:
             else:
                 fused = 0.0
 
-            is_anom = fused >= self.threshold
             sf = i in stat_flagged
             df = i in dl_flagged
+            is_anom = (fused >= self.threshold) or (sf and df) or \
+                      (sf and sn is not None and sn >= 0.90) or \
+                      (df and dn is not None and dn >= 0.90)
 
             # Anomaly type taxonomy
             if i in template_cycles:

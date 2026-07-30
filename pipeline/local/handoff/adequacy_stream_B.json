@@ -1,0 +1,49 @@
+{
+  "cols": [
+    "underhang_axial",
+    "underhang_radial",
+    "underhang_tangential"
+  ],
+  "mean_corr": 0.45257881029169233,
+  "period": 5993,
+  "period_conf": 0.36967436042405166,
+  "period_method": "autocorr (higher conf)",
+  "drift_cv": NaN,
+  "drift_pairs": [],
+  "drift_status": "segment too short for drift analysis",
+  "purity_frac": 0.01893095768374165,
+  "seg_quality": 7.765928808264374,
+  "n_sensors_pass": 3,
+  "n_sensors_total": 3,
+  "sensor_quality": {
+    "underhang_axial": {
+      "missing_frac": 0.0,
+      "std": 0.8898017534612698,
+      "passed": true,
+      "reason": "ok"
+    },
+    "underhang_radial": {
+      "missing_frac": 0.0,
+      "std": 0.34088954842895436,
+      "passed": true,
+      "reason": "ok"
+    },
+    "underhang_tangential": {
+      "missing_frac": 0.0,
+      "std": 0.08959666759575052,
+      "passed": true,
+      "reason": "ok"
+    }
+  },
+  "n_sensors_total_dataset": 3,
+  "scores": {
+    "correlation_strength": 0.8946195784259829,
+    "periodicity": 0.46209295053006455,
+    "period_stability": 0.5,
+    "training_purity": 0.9242761692650334,
+    "shape_consistency": 0.029258898966953217,
+    "sensor_completeness": 1.0
+  },
+  "overall": 0.5859746994169533,
+  "label": "~ MARGINAL"
+}

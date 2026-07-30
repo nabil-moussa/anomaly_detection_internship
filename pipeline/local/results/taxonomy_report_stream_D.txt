@@ -1,0 +1,41 @@
+
+══════════════════════════════════════════════════════════════════════
+  HYBRID ANOMALY TAXONOMY REPORT  —  stream_D
+══════════════════════════════════════════════════════════════════════
+  Route        : dl
+  Weights      : stat=0.00  dl=1.00
+  Threshold    : 0.50 (fused normalised score)
+  Total cycles : 0
+  Anomalies    : 0  (0.0%)
+
+  TYPE DISTRIBUTION
+  ──────────────────────────────────────────────────────────────────
+  BOTH          0
+  STAT_ONLY     0
+  DL_ONLY       0
+  FUSED         0
+  NORMAL        0
+  TEMPLATE      0
+
+  ANOMALY TYPE GUIDE
+  ──────────────────────────────────────────────────────────────────
+  BOTH       : Both methods flagged — highest confidence.
+               Relational breakdown confirmed by reconstruction error.
+
+  STAT_ONLY  : Only the statistical method flagged.
+               Correlation structure changed; amplitude stayed normal.
+               Candidate for early-stage fault — worth monitoring.
+
+  DL_ONLY    : Only MTAD-GAT flagged.
+               Sensors may drift together (preserving correlations)
+               or temporal pattern changed in a way CCAD missed.
+
+  FUSED      : Neither method alone crossed its threshold.
+               Weighted combination does. Treat as low-confidence.
+
+══════════════════════════════════════════════════════════════════════
+  ANOMALY DETAILS
+══════════════════════════════════════════════════════════════════════
+  No anomalies detected.
+
+══════════════════════════════════════════════════════════════════════

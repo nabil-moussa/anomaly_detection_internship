@@ -222,7 +222,11 @@ def run_single_seed(args, seed):
         else:
             label = np.zeros(expected_len, dtype="float32")
 
+    import time as _time
+    _t0 = _time.perf_counter()
     summary = predictor.predict_anomalies(x_train, x_test, label)
+    _t1 = _time.perf_counter()
+    print(f"Inference time (full test segment): {_t1 - _t0:.2f}s")
 
     # Save config
     with open(f"{save_path}/config.txt", "w") as f:
@@ -239,6 +243,9 @@ def run_single_seed(args, seed):
         handoff_dir = '/Work/Users/nmoussa/handoff',
     )
 
+    if torch.cuda.is_available():
+        print(f"GPU peak memory: "
+              f"{torch.cuda.max_memory_allocated()/1024**2:.0f} MB") 
     return summary
 
 
@@ -279,3 +286,4 @@ if __name__ == "__main__":
         with open(f"averaged_summary_{args.dataset}.json", "w") as f:
             json.dump(avg_summary, f, indent=2)
         print("\nAveraged summary saved.")
+
