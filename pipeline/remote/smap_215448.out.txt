@@ -1,0 +1,146 @@
+CUDA: True
+Namespace(dataset='SMAP', group='1-1', lookback=100, normalize=True, custom_csv=None, custom_label_csv=None, train_ratio=0.6, stream_name=None, kernel_size=7, use_gatv2=False, feat_gat_embed_dim=None, time_gat_embed_dim=None, gru_n_layers=1, gru_hid_dim=300, fc_n_layers=3, fc_hid_dim=300, recon_n_layers=1, recon_hid_dim=300, use_vae=False, kl_weight=0.1, alpha=0.2, dropout=0.3, epochs=100, val_split=0.1, bs=256, init_lr=0.001, shuffle_dataset=True, use_cuda=True, print_every=1, log_tensorboard=True, use_sr_cleaning=True, n_seeds=1, seeds='42', scale_scores=False, use_mov_av=False, gamma=0.3, level=0.98, q=0.001, dynamic_pot=False)
+
+==================================================
+RUNNING SEED 42
+==================================================
+Loading dataset: SMAP
+  train shape: (135183, 25)
+  test shape:  (427617, 25)
+  label shape: (427617,)
+Applying SR-based data cleaning (threshold=3.0)...
+SR cleaning done: replaced 55655 points (1.65%) across 25 features.
+train_size: 121575  val_size: 13508
+test_size: 427517
+Init total train loss: 0.69105
+Init total val loss:   0.69680
+Training model for 100 epochs..
+[Epoch 1] forecast=0.12720  recon=0.09816  total=0.22536  |  val_forecast=0.06246  val_recon=0.09437  val_total=0.15683  [13.1s]
+[Epoch 2] forecast=0.07473  recon=0.08756  total=0.16229  |  val_forecast=0.05843  val_recon=0.07306  val_total=0.13149  [12.7s]
+[Epoch 3] forecast=0.06966  recon=0.06468  total=0.13434  |  val_forecast=0.05828  val_recon=0.05980  val_total=0.11808  [12.7s]
+[Epoch 4] forecast=0.06687  recon=0.05454  total=0.12142  |  val_forecast=0.05544  val_recon=0.05398  val_total=0.10942  [12.7s]
+[Epoch 5] forecast=0.06516  recon=0.04914  total=0.11430  |  val_forecast=0.05282  val_recon=0.04644  val_total=0.09925  [12.7s]
+[Epoch 6] forecast=0.06384  recon=0.04547  total=0.10932  |  val_forecast=0.05640  val_recon=0.04200  val_total=0.09841  [12.7s]
+[Epoch 7] forecast=0.06302  recon=0.04385  total=0.10686  |  val_forecast=0.05603  val_recon=0.04224  val_total=0.09827  [12.7s]
+[Epoch 8] forecast=0.06169  recon=0.04250  total=0.10419  |  val_forecast=0.05318  val_recon=0.04152  val_total=0.09469  [12.7s]
+[Epoch 9] forecast=0.06178  recon=0.04217  total=0.10395  |  val_forecast=0.05096  val_recon=0.04123  val_total=0.09218  [12.6s]
+[Epoch 10] forecast=0.06016  recon=0.04081  total=0.10098  |  val_forecast=0.05137  val_recon=0.03962  val_total=0.09099  [12.7s]
+[Epoch 11] forecast=0.05972  recon=0.04016  total=0.09988  |  val_forecast=0.05169  val_recon=0.04144  val_total=0.09313  [12.6s]
+[Epoch 12] forecast=0.05934  recon=0.03979  total=0.09913  |  val_forecast=0.04947  val_recon=0.04021  val_total=0.08967  [12.6s]
+[Epoch 13] forecast=0.05875  recon=0.03983  total=0.09858  |  val_forecast=0.04944  val_recon=0.03774  val_total=0.08718  [12.6s]
+[Epoch 14] forecast=0.05811  recon=0.03919  total=0.09730  |  val_forecast=0.04875  val_recon=0.04033  val_total=0.08908  [12.6s]
+[Epoch 15] forecast=0.05793  recon=0.03933  total=0.09725  |  val_forecast=0.05021  val_recon=0.03900  val_total=0.08921  [12.6s]
+[Epoch 16] forecast=0.05734  recon=0.03861  total=0.09595  |  val_forecast=0.05114  val_recon=0.03881  val_total=0.08995  [12.6s]
+[Epoch 17] forecast=0.05736  recon=0.03892  total=0.09628  |  val_forecast=0.04873  val_recon=0.03755  val_total=0.08628  [12.6s]
+[Epoch 18] forecast=0.05665  recon=0.03785  total=0.09450  |  val_forecast=0.04959  val_recon=0.03735  val_total=0.08694  [12.6s]
+[Epoch 19] forecast=0.05658  recon=0.03793  total=0.09452  |  val_forecast=0.05010  val_recon=0.03628  val_total=0.08638  [12.5s]
+[Epoch 20] forecast=0.05633  recon=0.03750  total=0.09383  |  val_forecast=0.04831  val_recon=0.03680  val_total=0.08512  [12.6s]
+[Epoch 21] forecast=0.05601  recon=0.03744  total=0.09344  |  val_forecast=0.04872  val_recon=0.03738  val_total=0.08610  [12.6s]
+[Epoch 22] forecast=0.05553  recon=0.03723  total=0.09277  |  val_forecast=0.05051  val_recon=0.03928  val_total=0.08980  [12.6s]
+[Epoch 23] forecast=0.05555  recon=0.03685  total=0.09241  |  val_forecast=0.04905  val_recon=0.03765  val_total=0.08670  [12.6s]
+[Epoch 24] forecast=0.05613  recon=0.03767  total=0.09379  |  val_forecast=0.05756  val_recon=0.04380  val_total=0.10137  [12.6s]
+[Epoch 25] forecast=0.05607  recon=0.03688  total=0.09295  |  val_forecast=0.04702  val_recon=0.03723  val_total=0.08425  [12.6s]
+[Epoch 26] forecast=0.05512  recon=0.03641  total=0.09153  |  val_forecast=0.04908  val_recon=0.03588  val_total=0.08496  [12.6s]
+[Epoch 27] forecast=0.05453  recon=0.03619  total=0.09072  |  val_forecast=0.04738  val_recon=0.03489  val_total=0.08226  [12.6s]
+[Epoch 28] forecast=0.05436  recon=0.03607  total=0.09042  |  val_forecast=0.04711  val_recon=0.03699  val_total=0.08410  [12.6s]
+[Epoch 29] forecast=0.05403  recon=0.03592  total=0.08996  |  val_forecast=0.04683  val_recon=0.03482  val_total=0.08165  [12.6s]
+[Epoch 30] forecast=0.05351  recon=0.03541  total=0.08892  |  val_forecast=0.04733  val_recon=0.03365  val_total=0.08098  [12.6s]
+[Epoch 31] forecast=0.05350  recon=0.03545  total=0.08895  |  val_forecast=0.04827  val_recon=0.03777  val_total=0.08604  [12.6s]
+[Epoch 32] forecast=0.05341  recon=0.03528  total=0.08869  |  val_forecast=0.04716  val_recon=0.03327  val_total=0.08043  [12.6s]
+[Epoch 33] forecast=0.05349  recon=0.03521  total=0.08871  |  val_forecast=0.04799  val_recon=0.03410  val_total=0.08209  [12.6s]
+[Epoch 34] forecast=0.05293  recon=0.03484  total=0.08777  |  val_forecast=0.04780  val_recon=0.03339  val_total=0.08119  [12.6s]
+[Epoch 35] forecast=0.05236  recon=0.03428  total=0.08664  |  val_forecast=0.04779  val_recon=0.03310  val_total=0.08089  [12.6s]
+[Epoch 36] forecast=0.05131  recon=0.03405  total=0.08536  |  val_forecast=0.04958  val_recon=0.03556  val_total=0.08514  [12.6s]
+[Epoch 37] forecast=0.05232  recon=0.03432  total=0.08665  |  val_forecast=0.04870  val_recon=0.03354  val_total=0.08225  [12.6s]
+[Epoch 38] forecast=0.05168  recon=0.03379  total=0.08547  |  val_forecast=0.04848  val_recon=0.03276  val_total=0.08124  [12.6s]
+[Epoch 39] forecast=0.05163  recon=0.03434  total=0.08597  |  val_forecast=0.04770  val_recon=0.03312  val_total=0.08081  [12.6s]
+[Epoch 40] forecast=0.05178  recon=0.03341  total=0.08519  |  val_forecast=0.04829  val_recon=0.03363  val_total=0.08192  [12.5s]
+[Epoch 41] forecast=0.05155  recon=0.03339  total=0.08494  |  val_forecast=0.04970  val_recon=0.03388  val_total=0.08357  [12.6s]
+[Epoch 42] forecast=0.05078  recon=0.03278  total=0.08356  |  val_forecast=0.04813  val_recon=0.03797  val_total=0.08610  [12.6s]
+[Epoch 43] forecast=0.05069  recon=0.03304  total=0.08373  |  val_forecast=0.05249  val_recon=0.03109  val_total=0.08358  [12.6s]
+[Epoch 44] forecast=0.05400  recon=0.03487  total=0.08887  |  val_forecast=0.04861  val_recon=0.03193  val_total=0.08054  [12.6s]
+[Epoch 45] forecast=0.05243  recon=0.03367  total=0.08611  |  val_forecast=0.04962  val_recon=0.03111  val_total=0.08074  [12.6s]
+[Epoch 46] forecast=0.05046  recon=0.03256  total=0.08302  |  val_forecast=0.04955  val_recon=0.03064  val_total=0.08019  [12.6s]
+[Epoch 47] forecast=0.05038  recon=0.03241  total=0.08278  |  val_forecast=0.04795  val_recon=0.03228  val_total=0.08023  [12.6s]
+[Epoch 48] forecast=0.05029  recon=0.03241  total=0.08270  |  val_forecast=0.05010  val_recon=0.03172  val_total=0.08183  [12.6s]
+[Epoch 49] forecast=0.04968  recon=0.03193  total=0.08161  |  val_forecast=0.05016  val_recon=0.03013  val_total=0.08029  [12.6s]
+[Epoch 50] forecast=0.04960  recon=0.03163  total=0.08122  |  val_forecast=0.05186  val_recon=0.03541  val_total=0.08728  [12.6s]
+[Epoch 51] forecast=0.04889  recon=0.03159  total=0.08048  |  val_forecast=0.04893  val_recon=0.03080  val_total=0.07973  [12.6s]
+[Epoch 52] forecast=0.04965  recon=0.03162  total=0.08128  |  val_forecast=0.04911  val_recon=0.03761  val_total=0.08672  [12.5s]
+[Epoch 53] forecast=0.04900  recon=0.03145  total=0.08045  |  val_forecast=0.05023  val_recon=0.03092  val_total=0.08115  [12.5s]
+[Epoch 54] forecast=0.04928  recon=0.03131  total=0.08059  |  val_forecast=0.04915  val_recon=0.03378  val_total=0.08293  [12.6s]
+[Epoch 55] forecast=0.04855  recon=0.03112  total=0.07967  |  val_forecast=0.04882  val_recon=0.02977  val_total=0.07859  [12.6s]
+[Epoch 56] forecast=0.04778  recon=0.02998  total=0.07775  |  val_forecast=0.04891  val_recon=0.02918  val_total=0.07809  [12.6s]
+[Epoch 57] forecast=0.04852  recon=0.03097  total=0.07949  |  val_forecast=0.04846  val_recon=0.02999  val_total=0.07845  [12.6s]
+[Epoch 58] forecast=0.04828  recon=0.03065  total=0.07892  |  val_forecast=0.04869  val_recon=0.03292  val_total=0.08162  [12.6s]
+[Epoch 59] forecast=0.04701  recon=0.03020  total=0.07722  |  val_forecast=0.04929  val_recon=0.03024  val_total=0.07953  [12.6s]
+[Epoch 60] forecast=0.04692  recon=0.03015  total=0.07707  |  val_forecast=0.04984  val_recon=0.02959  val_total=0.07943  [12.6s]
+[Epoch 61] forecast=0.04812  recon=0.02986  total=0.07798  |  val_forecast=0.04816  val_recon=0.02959  val_total=0.07775  [12.6s]
+[Epoch 62] forecast=0.04666  recon=0.03045  total=0.07710  |  val_forecast=0.04943  val_recon=0.02940  val_total=0.07884  [12.6s]
+[Epoch 63] forecast=0.04676  recon=0.03027  total=0.07703  |  val_forecast=0.04855  val_recon=0.02808  val_total=0.07663  [12.6s]
+[Epoch 64] forecast=0.04728  recon=0.03089  total=0.07818  |  val_forecast=0.04855  val_recon=0.03176  val_total=0.08031  [12.5s]
+[Epoch 65] forecast=0.04665  recon=0.02941  total=0.07606  |  val_forecast=0.05102  val_recon=0.03257  val_total=0.08358  [12.7s]
+[Epoch 66] forecast=0.04715  recon=0.03038  total=0.07753  |  val_forecast=0.05042  val_recon=0.03028  val_total=0.08070  [12.6s]
+[Epoch 67] forecast=0.04731  recon=0.03032  total=0.07763  |  val_forecast=0.04973  val_recon=0.03025  val_total=0.07998  [12.6s]
+[Epoch 68] forecast=0.04770  recon=0.03063  total=0.07833  |  val_forecast=0.05361  val_recon=0.03204  val_total=0.08565  [12.6s]
+[Epoch 69] forecast=0.04679  recon=0.03014  total=0.07692  |  val_forecast=0.04898  val_recon=0.03223  val_total=0.08121  [12.6s]
+[Epoch 70] forecast=0.04953  recon=0.03379  total=0.08332  |  val_forecast=0.04937  val_recon=0.03535  val_total=0.08472  [12.6s]
+[Epoch 71] forecast=0.04838  recon=0.03163  total=0.08001  |  val_forecast=0.05075  val_recon=0.03016  val_total=0.08091  [12.6s]
+[Epoch 72] forecast=0.04641  recon=0.02920  total=0.07561  |  val_forecast=0.05050  val_recon=0.02804  val_total=0.07854  [12.6s]
+[Epoch 73] forecast=0.04485  recon=0.02864  total=0.07349  |  val_forecast=0.04909  val_recon=0.02668  val_total=0.07577  [12.6s]
+[Epoch 74] forecast=0.04515  recon=0.02928  total=0.07444  |  val_forecast=0.05178  val_recon=0.03183  val_total=0.08361  [12.6s]
+[Epoch 75] forecast=0.04746  recon=0.03089  total=0.07835  |  val_forecast=0.04989  val_recon=0.03264  val_total=0.08252  [12.6s]
+[Epoch 76] forecast=0.04588  recon=0.02994  total=0.07582  |  val_forecast=0.05030  val_recon=0.02954  val_total=0.07984  [12.6s]
+[Epoch 77] forecast=0.04534  recon=0.02901  total=0.07435  |  val_forecast=0.05103  val_recon=0.02928  val_total=0.08030  [12.6s]
+[Epoch 78] forecast=0.04466  recon=0.02991  total=0.07457  |  val_forecast=0.05092  val_recon=0.03052  val_total=0.08144  [12.6s]
+[Epoch 79] forecast=0.04633  recon=0.02960  total=0.07593  |  val_forecast=0.04931  val_recon=0.03079  val_total=0.08010  [12.6s]
+[Epoch 80] forecast=0.04523  recon=0.02906  total=0.07429  |  val_forecast=0.04885  val_recon=0.02578  val_total=0.07463  [12.6s]
+[Epoch 81] forecast=0.04428  recon=0.02879  total=0.07307  |  val_forecast=0.04988  val_recon=0.02652  val_total=0.07640  [12.6s]
+[Epoch 82] forecast=0.04420  recon=0.02815  total=0.07235  |  val_forecast=0.05095  val_recon=0.02757  val_total=0.07852  [12.6s]
+[Epoch 83] forecast=0.04583  recon=0.02929  total=0.07512  |  val_forecast=0.05032  val_recon=0.02764  val_total=0.07796  [12.5s]
+[Epoch 84] forecast=0.04553  recon=0.02901  total=0.07454  |  val_forecast=0.05002  val_recon=0.03274  val_total=0.08276  [12.6s]
+[Epoch 85] forecast=0.04467  recon=0.02893  total=0.07361  |  val_forecast=0.05001  val_recon=0.02769  val_total=0.07770  [12.6s]
+[Epoch 86] forecast=0.04453  recon=0.02811  total=0.07264  |  val_forecast=0.05073  val_recon=0.02640  val_total=0.07713  [12.6s]
+[Epoch 87] forecast=0.04466  recon=0.02851  total=0.07317  |  val_forecast=0.05088  val_recon=0.02764  val_total=0.07852  [12.6s]
+[Epoch 88] forecast=0.04368  recon=0.02872  total=0.07241  |  val_forecast=0.04968  val_recon=0.02622  val_total=0.07591  [12.6s]
+[Epoch 89] forecast=0.04500  recon=0.02903  total=0.07403  |  val_forecast=0.05004  val_recon=0.02684  val_total=0.07688  [12.6s]
+[Epoch 90] forecast=0.04544  recon=0.02834  total=0.07378  |  val_forecast=0.04926  val_recon=0.03235  val_total=0.08161  [12.6s]
+[Epoch 91] forecast=0.04530  recon=0.03124  total=0.07655  |  val_forecast=0.05107  val_recon=0.02888  val_total=0.07996  [12.6s]
+[Epoch 92] forecast=0.04394  recon=0.02900  total=0.07294  |  val_forecast=0.04917  val_recon=0.02627  val_total=0.07544  [12.5s]
+[Epoch 93] forecast=0.04369  recon=0.02853  total=0.07221  |  val_forecast=0.04960  val_recon=0.03048  val_total=0.08008  [12.6s]
+[Epoch 94] forecast=0.04468  recon=0.03008  total=0.07477  |  val_forecast=0.04962  val_recon=0.03222  val_total=0.08184  [12.6s]
+[Epoch 95] forecast=0.04868  recon=0.03230  total=0.08098  |  val_forecast=0.05224  val_recon=0.03013  val_total=0.08237  [12.6s]
+[Epoch 96] forecast=0.04687  recon=0.02922  total=0.07609  |  val_forecast=0.05054  val_recon=0.02559  val_total=0.07612  [12.6s]
+[Epoch 97] forecast=0.04453  recon=0.02782  total=0.07235  |  val_forecast=0.05071  val_recon=0.02715  val_total=0.07786  [12.6s]
+[Epoch 98] forecast=0.04451  recon=0.02852  total=0.07304  |  val_forecast=0.05184  val_recon=0.03296  val_total=0.08480  [12.6s]
+[Epoch 99] forecast=0.04370  recon=0.02794  total=0.07163  |  val_forecast=0.05020  val_recon=0.03020  val_total=0.08040  [12.6s]
+[Epoch 100] forecast=0.04299  recon=0.02820  total=0.07119  |  val_forecast=0.04942  val_recon=0.02542  val_total=0.07484  [12.6s]
+Training done in 1260s.
+Test forecast loss:       0.06613
+Test reconstruction loss: 0.07526
+Test total loss:          0.14139
+Predicting and calculating anomaly scores..
+Predicting and calculating anomaly scores..
+
+  [POT] Running POT thresholding...
+  [POT] level=0.9  q=0.005  threshold=1.348135
+Running Best-F1 search (oracle)...
+
+------------------------------------------------------------------
+  RESULTS  SMAP
+------------------------------------------------------------------
+  Method                     Prec      Rec       F1
+------------------------------------------------------------------
+  POT                      0.9553   0.8252   0.8855
+  Best-F1 (oracle)         0.9355   0.8556   0.8938
+------------------------------------------------------------------
+  Paper (MTAD-GAT)         0.8906   0.9123   0.9013  (Table III)
+
+  Gap paper vs POT: +0.0158  (within variance)
+------------------------------------------------------------------
+
+Saving output -> output/SMAP/15072026_143859/<train/test>_output.pkl
+Done.
+
+[export_scores] Loading saved outputs from output/SMAP/15072026_143859 ...
+[export_scores] DL scores saved -> /Work/Users/nmoussa/handoff/dl_scores_smap.json
